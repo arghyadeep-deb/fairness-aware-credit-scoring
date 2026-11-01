@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from typing import Any
 
@@ -36,15 +37,25 @@ class Arrays:
 
 
 def load_arrays(
-    cfg: dict[str, Any], split: str, smoke: bool = False, include_gender: bool = False
+    cfg: dict[str, Any],
+    split: str,
+    smoke: bool = False,
+    include_gender: bool = False,
+    purpose: str = "",
 ) -> tuple[Arrays, list[int]]:
-    """Load a split and the categorical cardinalities. `include_gender` is for arm GI only."""
-    if split == "test":
-        raise PermissionError("Phase 2 never reads the test split")
+    """Load a split and the categorical cardinalities. `include_gender` is for arm GI only.
+
+    The test split needs ALLOW_TEST=1 (Phase 6 only) and every real-data access is appended to
+    the guard log by `load_split` with `purpose`.
+    """
+    if split == "test" and os.environ.get("ALLOW_TEST") != "1":
+        raise PermissionError("Test split is locked: set ALLOW_TEST=1 (Phase 6 only)")
     proc, prep = data_dirs(cfg, smoke)
     order = json.loads((prep / "feature_order.json").read_text())
     card = json.loads((prep / "cardinalities.json").read_text())
-    x, a = load_split(cfg, split, with_target=True, processed=proc)
+    x, a = load_split(
+        cfg, split, with_target=True, purpose=purpose, processed=proc if (smoke or split != "test") else None
+    )
     cont_names = order["numeric"] + order["binary"]
     cat_names = order["categorical"]
     cont = x[cont_names].to_numpy(dtype="float32")
