@@ -68,5 +68,6 @@ joint:                  # Phase 3: joint objective (specs/09). Lambdas are set p
   smoke: {warmup_epochs: 1, ramp_epochs: 1, epochs: 3}   # compressed schedule for the 3-epoch smoke run only
   hp_source: artifacts/runs/20261101T055729Z_phase2/a2/tuning.json   # A2 hyper-parameters, no re-tuning
 sweep:
-  grid: {lambda_f: [0.0, 0.5, 2.0], lambda_c: [0.0, 0.5, 2.0], lambda_a: [0.0, 0.5, 1.0]}
+  # revised after the Phase 4 smoke check, before any sweep (specs/09); lambda_a handled by the rescue protocol
+  grid: {lambda_f: [0.0, 0.05, 0.1, 0.25, 0.5], lambda_c: [0.0, 0.5, 1.0, 2.0], lambda_a: [0.0]}
   seeds: [0, 1, 2]

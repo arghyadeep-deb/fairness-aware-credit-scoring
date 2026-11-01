@@ -28,7 +28,8 @@ Prior correction (S1): logit shift `-log(w_pos / w_neg)` applied on logits (anal
 
 ## Joint loss
 - Warm-up: 3 epochs with lambdas = 0 (weighted CE only). Then linear ramp over 5 epochs to target lambdas.
-- Starting lambda grid: lambda_f in {0, 0.5, 2}, lambda_c in {0, 0.5, 2}, lambda_a in {0, 0.5, 1}  (27 coarse points).
+- Lambda grid (REVISED in Phase 4 after the smoke check, before any sweep ran): main sweep lambda_f in {0, 0.05, 0.1, 0.25, 0.5}, lambda_c in {0, 0.5, 1, 2}, lambda_a = 0 (20 points x 3 seeds). Original grid was lambda_f {0, 0.5, 2} x lambda_c {0, 0.5, 2} x lambda_a {0, 0.5, 1} (27 points).
+  Reason: smoke runs showed lambda_f = 2 (normalised weight about 15) cost 0.10 to 0.2 AUC-ROC, and the GRL adversary at lambda_a 0.5 or 1 was unstable (AUC-ROC 0.46 to 0.62, adversary loss up to 8 to 16). This is NOT based on any frontier or sweep result (none existed). lambda_a is handled by a separate time-boxed rescue protocol (see RUN_LOG Phase 4): GRL with small lambda_a, then slower reversal, then a bounded confusion loss (a deviation from the GRL, labelled as such).
   If a loss term is on a very different scale, rescale the TERM (normalise by its initial magnitude), not the grid; log it.
 - Soft TPR/FPR: sigmoid with temperature 0.1 around the flag-rate threshold (batch quantile). Soft ECE: 10 soft bins, Gaussian kernel.
 - Stratified sampler: every batch has >= 64 samples per TARGET x gender cell.
