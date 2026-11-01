@@ -26,9 +26,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-os.environ.setdefault("OMP_NUM_THREADS", "8")
-os.environ.setdefault("MKL_NUM_THREADS", "8")
-os.environ.setdefault("LOKY_MAX_CPU_COUNT", "8")
+for _variable in (
+    "OMP_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "OPENBLAS_NUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
+    "LOKY_MAX_CPU_COUNT",
+):
+    os.environ[_variable] = "4"
 
 import lightgbm as lgb  # noqa: E402
 import numpy as np  # noqa: E402
@@ -55,7 +60,7 @@ from src.posthoc.prior_correction import correct_logits  # noqa: E402
 from src.run_arms import arm_cfg, save_json, sigmoid  # noqa: E402
 from src.run_joint import load_setup, tag  # noqa: E402
 from src.train import fit  # noqa: E402
-from src.utils import git_hash, load_config  # noqa: E402
+from src.utils import git_hash, load_config, seed_everything  # noqa: E402
 
 log = logging.getLogger("phase6")
 S3, S5 = [0, 1, 2], [0, 1, 2, 3, 4]
@@ -255,25 +260,34 @@ def access(name, spec, cfg, ctx, p6):
 # ------------------------------------------------------------------------------------ analyze
 def analyze(name, spec, cfg, ctx, p6):
     eb = cfg["evaluation"]["ece_bins"]
-    train, val, device, weights = (ctx[k] for k in ("train", "val", "device", "weights"))
+    train, val, device = (ctx[k] for k in ("train", "val", "device"))
+    memory = cfg["phase6_memory"]
     root = PREDS / slug(name)
     out = p6 / "test" / slug(name)
-    npz = np.load(PREDS / "test_arrays.npz")
-    te = Arrays(
-        npz["cont"],
-        npz["cat"],
-        npz["y"],
-        npz["a"],
-        train.cont_names,
-        train.cat_names,
-        train.binary_names,
-    )
+    # Only the cached test inputs are permitted: never load the Home Credit test split again.
+    with np.load(PREDS / "test_arrays.npz") as npz:
+        te = Arrays(
+            npz["cont"].astype(np.float32, copy=False),
+            npz["cat"],
+            npz["y"],
+            npz["a"],
+            train.cont_names,
+            train.cat_names,
+            train.binary_names,
+        )
     y, a = np.load(root / "y.npy"), np.load(root / "a.npy")
-    bg_ix = np.random.default_rng(0).choice(len(train.y), 100, replace=False)
-    tr_ix = np.sort(np.random.default_rng(1).choice(len(train.y), 4000, replace=False))
-    te_ix = np.sort(np.random.default_rng(2).choice(len(te.y), 4000, replace=False))
+    bg_ix = np.random.default_rng(0).choice(
+        len(train.y), memory["shap_background_rows"], replace=False
+    )
+    tr_ix = np.sort(
+        np.random.default_rng(1).choice(len(train.y), memory["shap_train_rows"], replace=False)
+    )
+    te_ix = np.sort(
+        np.random.default_rng(2).choice(len(te.y), memory["shap_test_rows"], replace=False)
+    )
     t0 = time.time()
     for s in spec["seeds"]:
+        seed_everything(s)
         sd, d = root / f"seed_{s}", out / f"seed_{s}"
         d.mkdir(parents=True, exist_ok=True)
         pt, flags = np.load(sd / "pt.npy"), np.load(sd / "flags.npy")
@@ -283,23 +297,60 @@ def analyze(name, spec, cfg, ctx, p6):
             m = build_model(spec, name, s, cfg, ctx)
         if name in PROBE_ARMS:
             ztr = logits_and_z(m, train, device)[1]
-            extras["z_probe_after"] = z_probe_test(cfg, ztr, train.a, np.load(sd / "zv.npy"), val.a, np.load(sd / "zt.npy"), a, s)  # fmt: skip
+            zv = np.load(sd / "zv.npy", mmap_mode="r")
+            zt = np.load(sd / "zt.npy", mmap_mode="r")
+            extras["z_probe_after"] = z_probe_test(cfg, ztr, train.a, zv, val.a, zt, a, s)
+            del ztr, zv, zt
+            gc.collect()
+            torch.cuda.empty_cache()
         if name in MP_ARMS and s == 0:
             pq = np.load(sd / "pq.npy")
             pairs = matched_pairs(te)
             extras["matched_pair"] = delta_stats(pq, *pairs)
             np.save(d / "matched_delta.npy", np.abs(pq[pairs[0]] - pq[pairs[1]]))
+            del pq, pairs
+            gc.collect()
+            torch.cuda.empty_cache()
         if name in SHAP_ARMS and s == 0:
-            sv_tr, meth = shap_vectors(m, train.subset(bg_ix), train.subset(tr_ix), device)
-            sv_te, _ = shap_vectors(m, train.subset(bg_ix), te.subset(te_ix), device)
+            options = {"nsamples": memory["shap_nsamples"], "batch_size": memory["shap_batch_size"]}
+            sv_tr, meth = shap_vectors(
+                m, train.subset(bg_ix), train.subset(tr_ix), device, **options
+            )
+            np.save(d / "shap_train.npy", sv_tr)
+            del sv_tr
+            gc.collect()
+            torch.cuda.empty_cache()
+            sv_te, test_method = shap_vectors(
+                m, train.subset(bg_ix), te.subset(te_ix), device, **options
+            )
+            np.save(d / "shap_test.npy", sv_te)
+            del sv_te
+            gc.collect()
+            torch.cuda.empty_cache()
+            sv_tr = np.load(d / "shap_train.npy", mmap_mode="r")
+            sv_te = np.load(d / "shap_test.npy", mmap_mode="r")
             extras["shap_probe_test_auc"] = shap_probe(
                 cfg, sv_tr, train.a[tr_ix], sv_te, a[te_ix], s
             )
-            extras["shap_method"] = meth
-            np.save(d / "shap_train.npy", sv_tr.astype("float32"))
-            np.save(d / "shap_test.npy", sv_te.astype("float32"))
+            extras["shap_method"] = (
+                meth if meth == test_method else f"train: {meth}; test: {test_method}"
+            )
+            extras["shap_rows"] = {
+                "train": len(tr_ix),
+                "test": len(te_ix),
+                "background": len(bg_ix),
+            }
+            del sv_tr, sv_te
+            gc.collect()
+            torch.cuda.empty_cache()
+        if name in PROBE_ARMS or (name in MP_ARMS and s == 0):
+            del m  # locals().pop(...) does not reliably release a fast-local reference.
+            gc.collect()
+            torch.cuda.empty_cache()
         m_ = compute_metrics(y, pt, a, flags, eb)
-        boot = bootstrap_metrics(y, pt, a, flags, 1000, 0, eb, n_jobs=NJOBS)
+        boot = bootstrap_metrics(
+            y, pt, a, flags, 1000, 0, eb, n_jobs=NJOBS, chunk_size=memory["bootstrap_chunk_size"]
+        )
         np.save(d / "test_prob.npy", pt)
         np.save(d / "test_flags.npy", flags)
         np.save(d / "boot.npy", boot)
@@ -307,11 +358,10 @@ def analyze(name, spec, cfg, ctx, p6):
                                         "test_flag_rate": float(np.mean(flags)),
                                         "deployable": spec["deployable"], **extras})  # fmt: skip
         log.info("%s s%d: AUC-ROC %.4f AUC-PR %.4f EOD %.4f wECE %.4f flag %.3f", name, s, m_["auc_roc"], m_["auc_pr"], m_["eod"], m_["worst_group_ece"], np.mean(flags))  # fmt: skip
-        for v in ("m", "ztr"):
-            locals().pop(v, None)
+        del pt, flags, boot, extras, m_
         gc.collect()
         torch.cuda.empty_cache()
-    save_json(out / "done.json", {"arm": name, "deployable": spec["deployable"], "git": git_hash(), "seconds": time.time() - t0})  # fmt: skip
+    save_json(out / "done.json", {"arm": name, "deployable": spec["deployable"], "git": git_hash(), "seconds": time.time() - t0, "memory_policy": memory})  # fmt: skip
 
 
 def main() -> None:
@@ -320,6 +370,17 @@ def main() -> None:
     p2, p4, p4b, p6 = (Path(x) for x in sys.argv[2:6])
     only = sys.argv[6:]
     cfg = load_config("configs/train.yaml")
+    cfg["phase6_memory"] = load_config("configs/phase6_memory.yaml")
+    if "--shap-test-rows" in only:
+        position = only.index("--shap-test-rows")
+        cfg["phase6_memory"]["shap_test_rows"] = int(only[position + 1])
+        del only[position : position + 2]
+    if mode not in {"access", "analyze"}:
+        raise ValueError("Mode must be access or analyze")
+    if mode == "analyze" and len(only) != 1:
+        raise ValueError("Memory-safe analysis requires exactly one arm per process")
+    torch.set_num_threads(cfg["phase6_memory"]["cpu_threads"])
+    torch.set_num_interop_threads(cfg["phase6_memory"]["cpu_threads"])
     ctx = make_ctx(cfg, p2, p4b)
     table = arm_table(p2, p4, p4b, p6)
     for name in only or list(table):

@@ -210,3 +210,27 @@ Protocol as declared in f6d3e3d (spec GRL, adv_steps k in {3,5} x lambda_a in {0
 - Constraints: all variants keep EOD <= 0.04, AUC-ROC >= control-0.02 and DIR >= 0.80. NONE meets the worst-group ECE cap (<= 0.02 = max(1.5 x S1, 0.02)) on 5 seeds; closest is k5 la0.1 at 0.0215. Note JT chosen itself is 0.0238 on 5 seeds (0.0189 on the 3 seeds used by the rule). So no variant lowers the probe by >=0.03 beyond noise while staying within ALL the rule's constraints. SOFT FLAG: leakage reduction costs worst-group ECE (calibration) beyond the cap, before S1 repair; the trade-off is the finding.
 
 - Phase 6 test protocol (committed BEFORE the first test access): two stages. `phase6_test.py access` = one guarded test load per arm (purpose phase6:<arm>), all predictions written immediately to artifacts/test_preds/; `analyze` reads only those files. A second access for an arm (crash) is flagged by access_started.json without access_done.json and must be logged here as an exception. Arm list unchanged from f6d3e3d.
+
+## Phase 6 memory-safe resume 20261101T145440Z
+Owner requested sequential one-arm processes; no new Home Credit test access. All done.json arms preserved. Threads/jobs4, float32, SHAP100background/4000train/5000cachedtest/batch500 (seed0 only), bootstrap100-resample blocks. Earlier completed arms retain their original4000test-row SHAP protocol; mixed sample counts are a documented deviation. JT-W/JT-A+PH undeclared, not run. Two earlier analyze kills were memory stops; incomplete attempt outputs are archived.
+
+- Skip `JT chosen`: existing done.json, unchanged.
+- START `JT tuned` attempt0: SHAP test rows=5000.
+
+## Phase 6 owner cancellation
+Owner replied "sorry scrap that"; stopped only this session's sequential scheduler and its child process tree. Partial analysis outputs and uncommitted memory fixes retained. No further arm/report/Taiwan/figure/notebook/gate/commit stage executed. This is a cancellation, not a successful phase or a memory-fallback result.
+{"utc": "2026-11-01T15:03:07.565642+00:00", "reason": "Owner replied sorry scrap that; Phase6 cancelled", "terminated_owned_pids": [8076, 13192, 20228, 21224, 34752], "remaining_owned_pids": [], "partial_outputs_preserved": true, "code_changes_preserved": true, "commit_created": false}
+
+## Phase 6 memory-safe resume 20261101T150425Z
+Owner requested sequential one-arm processes; no new Home Credit test access. All done.json arms preserved. Threads/jobs4, float32, SHAP100background/4000train/5000cachedtest/batch500 (seed0 only), bootstrap100-resample blocks. Earlier completed arms retain their original4000test-row SHAP protocol; mixed sample counts are a documented deviation. JT-W/JT-A+PH undeclared, not run. Two earlier analyze kills were memory stops; incomplete attempt outputs are archived.
+
+- Skip `JT chosen`: existing done.json, unchanged.
+- START `JT tuned` attempt0: SHAP test rows=5000.
+
+## Overnight run, section A (review of Codex's uncommitted edits)
+- Files changed by another tool (Codex) while no session was supposed to edit: scripts/phase6_test.py, phase6_report.py, phase6_taiwan.py, src/eval/{bootstrap,final,leakage}.py, new configs/phase6_memory.yaml, scripts/phase6_resume.py, phase6_figures.py, src/eval/phase6_figures.py, docs/phase6_memory_resume.md, tests/test_phase6_memory.py. Reviewed: bootstrap keeps replicate b = rng([seed, b]); tests/test_bootstrap_equivalence.py proves exact equality with a single-process reference (chunk 100/37/250/1, threads 1-4, paired case). LightGBM probe n_jobs capped at 4 (no result change expected).
+- phase6_resume.py: ANY non-zero exit code is a failure, retried once with 2,000 SHAP rows (tests/test_phase6_resume_exit.py).
+- Taiwan: my earlier script used a 60/20/20 split (deviation from specs/08); never run. Rewritten to specs/08: header=1, SEX 1=male, odd EDUCATION/MARRIAGE codes -> index 0 (counts logged), 70/15/15 stratified on default x SEX seed 42, scaler on train only, gender not in X, test reachable only via guarded access_test (one guard line per arm), arms A0/A2/S1/S2-EG/S2-GT/JT chosen/REF + gender-from-features probe, JT chosen = (0.05,2,0) with the A2 hyper-parameters (tests/test_taiwan.py).
+- tests/test_leakage.py guard test updated: Phase 1 whitelisted entry plus one `phase6:<arm>` entry per arm (never two for an arm).
+- Stale JT_tuned_attempt0.json in memory_resume_20261101T145440Z marked cancelled (file kept).
+- Mixed SHAP sample counts: 17 arms analysed with 4,000 test rows, remaining arms with 5,000 (or 2,000 after a retry).

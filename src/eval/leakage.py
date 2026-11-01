@@ -44,7 +44,8 @@ def fit_lgbm_probe(
     """LightGBM gender probe; early stopping on validation AUC only."""
     p = dict(params)
     stop = p.pop("early_stopping_rounds")
-    model = lgb.LGBMClassifier(**p, objective="binary", random_state=seed, n_jobs=-1, verbose=-1)
+    jobs = min(4, max(1, int(p.pop("n_jobs", 4))))
+    model = lgb.LGBMClassifier(**p, objective="binary", random_state=seed, n_jobs=jobs, verbose=-1)
     model.fit(
         xtr,
         ytr,

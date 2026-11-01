@@ -17,7 +17,6 @@ sys.path.insert(0, str(ROOT))
 import matplotlib  # noqa: E402
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 from sklearn.metrics import roc_auc_score  # noqa: E402
@@ -154,29 +153,10 @@ def main() -> None:
     rc = [{"arm": a, "seed": s, "max_abs_val_prob_diff": M[a][i].get("retrain_max_abs_val_diff")} for a in ("REF", "GI") if a in dirs for i, s in enumerate(seeds_of(dirs[a]))]  # fmt: skip
     pd.DataFrame(rc).to_csv(out / "retrain_check.csv", index=False)
 
-    # ---- Pareto figure of deployable arms ----
-    dd = tbl[tbl.deployable & ~tbl.arm.isin(JTA)]
-    fig, ax = plt.subplots(1, 2, figsize=(13, 4.8))
-    for a, (y, yl, lg) in zip(
-        ax,
-        [
-            ("auc_pr", "AUC-PR (higher better)", False),
-            ("worst_group_ece", "worst-group ECE (lower better)", True),
-        ],
-    ):
-        for _, r in dd.iterrows():
-            hl = r.arm in ("JT chosen", "S2-EG", "S1", "A2")
-            a.errorbar(r.eod, r[y], xerr=[[r.eod - r.eod_lo], [r.eod_hi - r.eod]], yerr=[[r[y] - r[y + "_lo"]], [r[y + "_hi"] - r[y]]], fmt="o", ms=7 if hl else 4, color="#b03a2e" if r.arm.startswith("JT") else ("#3b6ea5" if r.arm.startswith("S") else "#777"), alpha=0.9, lw=0.6)  # fmt: skip
-            a.annotate(r.arm, (r.eod, r[y]), fontsize=7, xytext=(3, 3), textcoords="offset points")
-        a.set_xlabel("EOD (lower better)")
-        a.set_ylabel(yl)
-        if lg:
-            a.set_yscale("log")
-    ax[0].set_title(
-        "Deployable arms, TEST set (95% CI), red = JT, blue = post-hoc S1/S2", fontsize=9
-    )
-    plt.tight_layout()
-    plt.savefig(out / "pareto_deployable.png", dpi=150)
+    if "--skip-figures" not in sys.argv:
+        from src.eval.phase6_figures import plot_deployable
+
+        plot_deployable(tbl, out)
     print(
         tbl[
             [

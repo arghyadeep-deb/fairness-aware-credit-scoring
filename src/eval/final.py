@@ -4,6 +4,7 @@ matched-pair check. Nothing here reads the test split itself; callers pass array
 
 from __future__ import annotations
 
+import gc
 from typing import Any
 
 import numpy as np
@@ -36,11 +37,11 @@ def load_joint(arr_like: Arrays, cards, cfg, hp, state, device):
 @torch.no_grad()
 def logits_and_z(model, arr: Arrays, device, batch: int = 8192) -> tuple[np.ndarray, np.ndarray]:
     """(logit, z) for a backbone or a JointModel (Head B ignored)."""
-    xc, xk = torch.from_numpy(arr.cont).to(device), torch.from_numpy(arr.cat).to(device)
+    xc, xk = torch.from_numpy(arr.cont), torch.from_numpy(arr.cat)
     lg, zs = [], []
     for i in range(0, len(xc), batch):
         with torch.autocast("cuda", dtype=torch.bfloat16, enabled=device.type == "cuda"):
-            out = model(xc[i : i + batch], xk[i : i + batch])
+            out = model(xc[i : i + batch].to(device), xk[i : i + batch].to(device))
         lg.append(out[0].float().cpu())
         zs.append(out[1].float().cpu())
     return torch.cat(lg).numpy(), torch.cat(zs).numpy()
@@ -50,10 +51,11 @@ def z_probe_test(cfg, ztr, atr, zva, ava, zte, ate, seed: int) -> dict[str, floa
     """Phase 1 'before' protocol on z: LightGBM trained on train, early-stopped on val AUC,
     scored on TEST (plus val); logistic reference. Gender labels only, TARGET never used."""
     cols = [f"z{i}" for i in range(ztr.shape[1])]
-    df = lambda z: pd.DataFrame(z, columns=cols)  # noqa: E731
+    df = lambda z: pd.DataFrame(np.asarray(z, dtype=np.float32), columns=cols)  # noqa: E731
     gbm = fit_lgbm_probe(df(ztr), atr, df(zva), ava, [], cfg["leakage"]["lightgbm"], seed)
+    ztr = np.asarray(ztr, dtype=np.float32)
     sc = StandardScaler().fit(ztr)
-    lr = LogisticRegression(max_iter=300).fit(sc.transform(ztr), atr)
+    lr = LogisticRegression(max_iter=300, n_jobs=4).fit(sc.transform(ztr), atr)
     return {
         "probe_lgbm_test_auc": float(roc_auc_score(ate, gbm.predict_proba(df(zte))[:, 1])),
         "probe_lgbm_val_auc": float(roc_auc_score(ava, gbm.predict_proba(df(zva))[:, 1])),
@@ -78,7 +80,7 @@ class _FromEmb(torch.nn.Module):
 
 
 def shap_vectors(
-    model, bg: Arrays, rows: Arrays, device, nsamples: int = 100
+    model, bg: Arrays, rows: Arrays, device, nsamples: int = 100, batch_size: int = 500
 ) -> tuple[np.ndarray, str]:
     """Per-row attribution vectors (n_cont + n_cat) of the default logit.
 
@@ -94,7 +96,7 @@ def shap_vectors(
         with torch.no_grad():
             return bb.emb(xk).flatten(1).float()
 
-    bc, be = torch.from_numpy(bg.cont).to(device), emb_of(bg)
+    bc, be = torch.from_numpy(np.asarray(bg.cont, dtype=np.float32)).to(device), emb_of(bg)
     n_cat = len(bb.emb.tables)
     d = be.shape[1] // n_cat
     out, method = [], "shap.GradientExplainer"
@@ -102,24 +104,34 @@ def shap_vectors(
         import shap
 
         ex = shap.GradientExplainer(f, [bc, be])
-        for i in range(0, len(rows.cont), 500):
-            c = torch.from_numpy(rows.cont[i : i + 500]).to(device)
-            e = emb_of(_slice(rows, i, i + 500))
+        for i in range(0, len(rows.cont), batch_size):
+            c = torch.from_numpy(np.asarray(rows.cont[i : i + batch_size], dtype=np.float32)).to(
+                device
+            )
+            e = emb_of(_slice(rows, i, i + batch_size))
             sv = ex.shap_values([c, e], nsamples=nsamples)
-            sv = [np.asarray(s).reshape(len(c), -1) for s in sv]
+            sv = [np.asarray(s, dtype=np.float32).reshape(len(c), -1) for s in sv]
             out.append(np.concatenate([sv[0], sv[1].reshape(len(c), n_cat, d).sum(2)], axis=1))
+            del c, e, sv
+            gc.collect()
+            torch.cuda.empty_cache()
+    except (MemoryError, torch.cuda.OutOfMemoryError):
+        raise  # The sequential runner records the failure and retries the declared smaller sample.
     except Exception:  # pragma: no cover - fallback path
         method = "gradient x input (GradientExplainer unavailable)"
         out = []
-        for i in range(0, len(rows.cont), 500):
-            c = torch.from_numpy(rows.cont[i : i + 500]).to(device).requires_grad_(True)
-            e = emb_of(_slice(rows, i, i + 500)).requires_grad_(True)
-            f(c, e).sum().backward()
-            gc, ge = c.grad * (c - bc.mean(0)), e.grad * (e - be.mean(0))
+        for i in range(0, len(rows.cont), batch_size):
+            c = torch.from_numpy(rows.cont[i : i + batch_size]).to(device).requires_grad_(True)
+            e = emb_of(_slice(rows, i, i + batch_size)).requires_grad_(True)
+            dc, de = torch.autograd.grad(f(c, e).sum(), (c, e))
+            gc_, ge = dc * (c - bc.mean(0)), de * (e - be.mean(0))
             out.append(
-                torch.cat([gc, ge.view(len(c), n_cat, d).sum(2)], dim=1).detach().cpu().numpy()
+                torch.cat([gc_, ge.view(len(c), n_cat, d).sum(2)], dim=1).detach().cpu().numpy()
             )
-    return np.concatenate(out), method
+            del c, e, dc, de, gc_, ge
+            gc.collect()
+            torch.cuda.empty_cache()
+    return np.concatenate(out).astype(np.float32, copy=False), method
 
 
 def _slice(arr: Arrays, i: int, j: int) -> Arrays:
@@ -133,7 +145,7 @@ def shap_probe(cfg, sv_tr, a_tr, sv_te, a_te, seed: int) -> float:
     idx = rng.permutation(len(sv_tr))
     k = int(0.8 * len(idx))
     cols = [f"s{i}" for i in range(sv_tr.shape[1])]
-    df = lambda z: pd.DataFrame(z, columns=cols)  # noqa: E731
+    df = lambda z: pd.DataFrame(np.asarray(z, dtype=np.float32), columns=cols)  # noqa: E731
     g = fit_lgbm_probe(
         df(sv_tr[idx[:k]]), a_tr[idx[:k]], df(sv_tr[idx[k:]]), a_tr[idx[k:]], [],
         cfg["leakage"]["lightgbm"], seed,

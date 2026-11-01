@@ -162,7 +162,13 @@ def main() -> None:
         dg = pd.read_csv(eg_dir.parent / "eg_diagnosis.csv")
         dg = dg[dg.version.str.startswith("fixed")]
         egc = dg.groupby("eps").mean(numeric_only=True).reset_index()
-        egc = egc.rename(columns={"shared10_eod": "eod", "shared10_recall": "recall", "shared10_flag_rate": "flag_rate"})
+        egc = egc.rename(
+            columns={
+                "shared10_eod": "eod",
+                "shared10_recall": "recall",
+                "shared10_flag_rate": "flag_rate",
+            }
+        )
         egc["abs_gap"] = (egc.eod - target).abs()
         eps_star = 0.01
     egc.to_csv(out / "eg_eps_curve.csv", index=False)

@@ -6,6 +6,8 @@ is drawn from default_rng([seed, b]) regardless of how the replicates are chunke
 
 from __future__ import annotations
 
+import gc
+
 import numpy as np
 from joblib import Parallel, delayed
 
@@ -41,14 +43,25 @@ def bootstrap_metrics(
     seed: int,
     ece_bins: int = 15,
     n_jobs: int = -1,
+    chunk_size: int = 100,
 ) -> np.ndarray:
     """Array (n_boot, len(METRIC_NAMES)) of metrics on stratified resamples."""
     cells = cell_index(y, a)
-    chunks = np.array_split(np.arange(n_boot), max(1, min(n_boot, 24)))
-    parts = Parallel(n_jobs=n_jobs)(
-        delayed(_chunk)(y, p, a, flags, cells, seed, bs, ece_bins) for bs in chunks if len(bs)
-    )
-    return np.vstack(parts)
+    if chunk_size < 1 or n_boot < 1:
+        raise ValueError("Bootstrap count and chunk_size must be positive")
+    jobs = min(4, max(1, n_jobs if n_jobs > 0 else 4))
+    result = np.empty((n_boot, len(METRIC_NAMES)), dtype=np.float64)
+    for start in range(0, n_boot, chunk_size):
+        stop = min(start + chunk_size, n_boot)
+        chunks = np.array_split(np.arange(start, stop), min(jobs, stop - start))
+        # Threads share the input arrays instead of copying them into four processes.
+        parts = Parallel(n_jobs=jobs, prefer="threads")(
+            delayed(_chunk)(y, p, a, flags, cells, seed, bs, ece_bins) for bs in chunks
+        )
+        result[start:stop] = np.vstack(parts)
+        del parts, chunks
+        gc.collect()
+    return result
 
 
 def pooled_ci(per_seed: list[np.ndarray], level: float = 0.95) -> tuple[np.ndarray, np.ndarray]:

@@ -60,9 +60,18 @@ def test_real_before_json_contract():
     assert (path.parent / "top15_proxy_features_before.png").stat().st_size > 1000
 
 
-def test_guard_log_has_only_gender_only_probe_entries():
+def test_guard_log_entries_are_whitelisted_probe_or_declared_phase6_arms():
+    """Phase 1 entry: gender-only, no target. Phase 6: one entry per arm."""
     log = resolve(CFG["paths"]["guard_log"])
     assert log.exists()
+    purposes = []
     for line in log.read_text().splitlines():
         e = json.loads(line)
-        assert e["purpose"] == "leakage_probe_gender_only" and e["with_target"] is False
+        purposes.append(e["purpose"])
+        if e["purpose"] == "leakage_probe_gender_only":
+            assert e["with_target"] is False
+        else:
+            assert e["purpose"].startswith("phase6:")
+    p6 = [p for p in purposes if p.startswith("phase6:")]
+    assert len(p6) == len(set(p6))  # never two accesses for the same arm
+    assert purposes.count("leakage_probe_gender_only") == 1

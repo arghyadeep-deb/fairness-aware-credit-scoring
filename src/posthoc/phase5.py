@@ -120,5 +120,7 @@ def fairlearn_fit_predict(y_val, p_val, a_val, p_test, a_test, seed: int = 0) ->
         predict_method="predict_proba",
     )
     to.fit(np.asarray(p_val).reshape(-1, 1), y_val, sensitive_features=a_val)
-    pred = to.predict(np.asarray(p_test).reshape(-1, 1), sensitive_features=a_test, random_state=seed)
+    pred = to.predict(
+        np.asarray(p_test).reshape(-1, 1), sensitive_features=a_test, random_state=seed
+    )
     return np.asarray(pred).astype(bool)

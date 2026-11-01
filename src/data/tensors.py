@@ -54,7 +54,11 @@ def load_arrays(
     order = json.loads((prep / "feature_order.json").read_text())
     card = json.loads((prep / "cardinalities.json").read_text())
     x, a = load_split(
-        cfg, split, with_target=True, purpose=purpose, processed=proc if (smoke or split != "test") else None
+        cfg,
+        split,
+        with_target=True,
+        purpose=purpose,
+        processed=proc if (smoke or split != "test") else None,
     )
     cont_names = order["numeric"] + order["binary"]
     cat_names = order["categorical"]
