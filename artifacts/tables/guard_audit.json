@@ -1,0 +1,9 @@
+{
+ "n_entries": 28,
+ "phase1_whitelisted": 1,
+ "phase6_entries": 27,
+ "arms_evaluated": 27,
+ "one_entry_per_arm": true,
+ "missing": [],
+ "extra": []
+}

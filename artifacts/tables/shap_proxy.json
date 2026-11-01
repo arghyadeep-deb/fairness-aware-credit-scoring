@@ -1,0 +1,507 @@
+{
+ "before_top15_proxy_features": [
+  "OCCUPATION_TYPE",
+  "ORGANIZATION_TYPE",
+  "FLAG_OWN_CAR",
+  "EXT_SOURCE_1",
+  "AGE_YEARS",
+  "AMT_INCOME_TOTAL",
+  "NAME_FAMILY_STATUS",
+  "CREDIT_TERM",
+  "YEARS_EMPLOYED",
+  "CREDIT_INCOME_RATIO",
+  "EXT_SOURCE_2",
+  "EXT_SOURCE_3",
+  "CNT_FAM_MEMBERS",
+  "ANNUITY_INCOME_RATIO",
+  "AMT_ANNUITY"
+ ],
+ "JT chosen": {
+  "top_A": [
+   "AMT_GOODS_PRICE",
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_CREDIT",
+   "EXT_SOURCE_1",
+   "AMT_INCOME_TOTAL",
+   "CREDIT_INCOME_RATIO",
+   "AMT_ANNUITY",
+   "CREDIT_TERM",
+   "YEARS_EMPLOYED",
+   "ANNUITY_INCOME_RATIO",
+   "EXT_SOURCE_1_MISSING",
+   "AGE_YEARS",
+   "ORGANIZATION_TYPE",
+   "OCCUPATION_TYPE"
+  ],
+  "top_B": [
+   "AMT_GOODS_PRICE",
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_CREDIT",
+   "AMT_ANNUITY",
+   "EXT_SOURCE_1",
+   "EXT_SOURCE_1_MISSING",
+   "CREDIT_TERM",
+   "YEARS_EMPLOYED",
+   "CREDIT_INCOME_RATIO",
+   "FLAG_OWN_CAR",
+   "ORGANIZATION_TYPE",
+   "ANNUITY_INCOME_RATIO",
+   "AGE_YEARS",
+   "OCCUPATION_TYPE"
+  ],
+  "new_in_B": [
+   "FLAG_OWN_CAR"
+  ],
+  "new_proxy_flags": {
+   "FLAG_OWN_CAR": true
+  },
+  "new_gender_auc": {
+   "FLAG_OWN_CAR": 0.6710045615312776
+  },
+  "top_B_in_before_top15": [
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_ANNUITY",
+   "EXT_SOURCE_1",
+   "CREDIT_TERM",
+   "YEARS_EMPLOYED",
+   "CREDIT_INCOME_RATIO",
+   "FLAG_OWN_CAR",
+   "ORGANIZATION_TYPE",
+   "ANNUITY_INCOME_RATIO",
+   "AGE_YEARS",
+   "OCCUPATION_TYPE"
+  ]
+ },
+ "JT tuned": {
+  "top_A": [
+   "AMT_GOODS_PRICE",
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_CREDIT",
+   "EXT_SOURCE_1",
+   "AMT_INCOME_TOTAL",
+   "CREDIT_INCOME_RATIO",
+   "AMT_ANNUITY",
+   "CREDIT_TERM",
+   "YEARS_EMPLOYED",
+   "ANNUITY_INCOME_RATIO",
+   "EXT_SOURCE_1_MISSING",
+   "AGE_YEARS",
+   "ORGANIZATION_TYPE",
+   "OCCUPATION_TYPE"
+  ],
+  "top_B": [
+   "EXT_SOURCE_3",
+   "AMT_GOODS_PRICE",
+   "EXT_SOURCE_2",
+   "AMT_CREDIT",
+   "CREDIT_INCOME_RATIO",
+   "EXT_SOURCE_1",
+   "EXT_SOURCE_1_MISSING",
+   "AMT_INCOME_TOTAL",
+   "ANNUITY_INCOME_RATIO",
+   "FLAG_OWN_CAR",
+   "YEARS_EMPLOYED",
+   "AMT_ANNUITY",
+   "ORGANIZATION_TYPE",
+   "NAME_EDUCATION_TYPE",
+   "NAME_INCOME_TYPE"
+  ],
+  "new_in_B": [
+   "FLAG_OWN_CAR",
+   "NAME_EDUCATION_TYPE",
+   "NAME_INCOME_TYPE"
+  ],
+  "new_proxy_flags": {
+   "FLAG_OWN_CAR": true,
+   "NAME_EDUCATION_TYPE": false,
+   "NAME_INCOME_TYPE": false
+  },
+  "new_gender_auc": {
+   "FLAG_OWN_CAR": 0.6710045615312776,
+   "NAME_EDUCATION_TYPE": 0.5097098735781405,
+   "NAME_INCOME_TYPE": 0.578946008786607
+  },
+  "top_B_in_before_top15": [
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "CREDIT_INCOME_RATIO",
+   "EXT_SOURCE_1",
+   "AMT_INCOME_TOTAL",
+   "ANNUITY_INCOME_RATIO",
+   "FLAG_OWN_CAR",
+   "YEARS_EMPLOYED",
+   "AMT_ANNUITY",
+   "ORGANIZATION_TYPE"
+  ]
+ },
+ "JT-A k3 la0.1": {
+  "top_A": [
+   "AMT_GOODS_PRICE",
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_CREDIT",
+   "EXT_SOURCE_1",
+   "AMT_INCOME_TOTAL",
+   "CREDIT_INCOME_RATIO",
+   "AMT_ANNUITY",
+   "CREDIT_TERM",
+   "YEARS_EMPLOYED",
+   "ANNUITY_INCOME_RATIO",
+   "EXT_SOURCE_1_MISSING",
+   "AGE_YEARS",
+   "ORGANIZATION_TYPE",
+   "OCCUPATION_TYPE"
+  ],
+  "top_B": [
+   "AMT_GOODS_PRICE",
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_CREDIT",
+   "AMT_ANNUITY",
+   "FLAG_OWN_CAR",
+   "EXT_SOURCE_1",
+   "AMT_INCOME_TOTAL",
+   "EXT_SOURCE_1_MISSING",
+   "YEARS_EMPLOYED",
+   "ANNUITY_INCOME_RATIO",
+   "AGE_YEARS",
+   "CREDIT_TERM",
+   "CREDIT_INCOME_RATIO",
+   "NAME_EDUCATION_TYPE"
+  ],
+  "new_in_B": [
+   "FLAG_OWN_CAR",
+   "NAME_EDUCATION_TYPE"
+  ],
+  "new_proxy_flags": {
+   "FLAG_OWN_CAR": true,
+   "NAME_EDUCATION_TYPE": false
+  },
+  "new_gender_auc": {
+   "FLAG_OWN_CAR": 0.6710045615312776,
+   "NAME_EDUCATION_TYPE": 0.5097098735781405
+  },
+  "top_B_in_before_top15": [
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_ANNUITY",
+   "FLAG_OWN_CAR",
+   "EXT_SOURCE_1",
+   "AMT_INCOME_TOTAL",
+   "YEARS_EMPLOYED",
+   "ANNUITY_INCOME_RATIO",
+   "AGE_YEARS",
+   "CREDIT_TERM",
+   "CREDIT_INCOME_RATIO"
+  ]
+ },
+ "JT-A k3 la0.25": {
+  "top_A": [
+   "AMT_GOODS_PRICE",
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_CREDIT",
+   "EXT_SOURCE_1",
+   "AMT_INCOME_TOTAL",
+   "CREDIT_INCOME_RATIO",
+   "AMT_ANNUITY",
+   "CREDIT_TERM",
+   "YEARS_EMPLOYED",
+   "ANNUITY_INCOME_RATIO",
+   "EXT_SOURCE_1_MISSING",
+   "AGE_YEARS",
+   "ORGANIZATION_TYPE",
+   "OCCUPATION_TYPE"
+  ],
+  "top_B": [
+   "AMT_GOODS_PRICE",
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_CREDIT",
+   "AMT_ANNUITY",
+   "NAME_EDUCATION_TYPE",
+   "EXT_SOURCE_1",
+   "EXT_SOURCE_1_MISSING",
+   "YEARS_EMPLOYED",
+   "CREDIT_TERM",
+   "AGE_YEARS",
+   "ORGANIZATION_TYPE",
+   "FLAG_OWN_CAR",
+   "CREDIT_INCOME_RATIO",
+   "AMT_INCOME_TOTAL"
+  ],
+  "new_in_B": [
+   "NAME_EDUCATION_TYPE",
+   "FLAG_OWN_CAR"
+  ],
+  "new_proxy_flags": {
+   "NAME_EDUCATION_TYPE": false,
+   "FLAG_OWN_CAR": true
+  },
+  "new_gender_auc": {
+   "NAME_EDUCATION_TYPE": 0.5097098735781405,
+   "FLAG_OWN_CAR": 0.6710045615312776
+  },
+  "top_B_in_before_top15": [
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_ANNUITY",
+   "EXT_SOURCE_1",
+   "YEARS_EMPLOYED",
+   "CREDIT_TERM",
+   "AGE_YEARS",
+   "ORGANIZATION_TYPE",
+   "FLAG_OWN_CAR",
+   "CREDIT_INCOME_RATIO",
+   "AMT_INCOME_TOTAL"
+  ]
+ },
+ "JT-A k3 la0.5": {
+  "top_A": [
+   "AMT_GOODS_PRICE",
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_CREDIT",
+   "EXT_SOURCE_1",
+   "AMT_INCOME_TOTAL",
+   "CREDIT_INCOME_RATIO",
+   "AMT_ANNUITY",
+   "CREDIT_TERM",
+   "YEARS_EMPLOYED",
+   "ANNUITY_INCOME_RATIO",
+   "EXT_SOURCE_1_MISSING",
+   "AGE_YEARS",
+   "ORGANIZATION_TYPE",
+   "OCCUPATION_TYPE"
+  ],
+  "top_B": [
+   "AMT_GOODS_PRICE",
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_CREDIT",
+   "AMT_ANNUITY",
+   "EXT_SOURCE_1",
+   "FLAG_OWN_CAR",
+   "CREDIT_TERM",
+   "AGE_YEARS",
+   "EXT_SOURCE_1_MISSING",
+   "CREDIT_INCOME_RATIO",
+   "YEARS_EMPLOYED",
+   "NAME_EDUCATION_TYPE",
+   "ORGANIZATION_TYPE",
+   "OCCUPATION_TYPE"
+  ],
+  "new_in_B": [
+   "FLAG_OWN_CAR",
+   "NAME_EDUCATION_TYPE"
+  ],
+  "new_proxy_flags": {
+   "FLAG_OWN_CAR": true,
+   "NAME_EDUCATION_TYPE": false
+  },
+  "new_gender_auc": {
+   "FLAG_OWN_CAR": 0.6710045615312776,
+   "NAME_EDUCATION_TYPE": 0.5097098735781405
+  },
+  "top_B_in_before_top15": [
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_ANNUITY",
+   "EXT_SOURCE_1",
+   "FLAG_OWN_CAR",
+   "CREDIT_TERM",
+   "AGE_YEARS",
+   "CREDIT_INCOME_RATIO",
+   "YEARS_EMPLOYED",
+   "ORGANIZATION_TYPE",
+   "OCCUPATION_TYPE"
+  ]
+ },
+ "JT-A k5 la0.1": {
+  "top_A": [
+   "AMT_GOODS_PRICE",
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_CREDIT",
+   "EXT_SOURCE_1",
+   "AMT_INCOME_TOTAL",
+   "CREDIT_INCOME_RATIO",
+   "AMT_ANNUITY",
+   "CREDIT_TERM",
+   "YEARS_EMPLOYED",
+   "ANNUITY_INCOME_RATIO",
+   "EXT_SOURCE_1_MISSING",
+   "AGE_YEARS",
+   "ORGANIZATION_TYPE",
+   "OCCUPATION_TYPE"
+  ],
+  "top_B": [
+   "AMT_GOODS_PRICE",
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_CREDIT",
+   "AMT_ANNUITY",
+   "EXT_SOURCE_1_MISSING",
+   "EXT_SOURCE_1",
+   "ORGANIZATION_TYPE",
+   "YEARS_EMPLOYED",
+   "CREDIT_TERM",
+   "AGE_YEARS",
+   "FLAG_OWN_CAR",
+   "CREDIT_INCOME_RATIO",
+   "ANNUITY_INCOME_RATIO",
+   "AMT_INCOME_TOTAL"
+  ],
+  "new_in_B": [
+   "FLAG_OWN_CAR"
+  ],
+  "new_proxy_flags": {
+   "FLAG_OWN_CAR": true
+  },
+  "new_gender_auc": {
+   "FLAG_OWN_CAR": 0.6710045615312776
+  },
+  "top_B_in_before_top15": [
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_ANNUITY",
+   "EXT_SOURCE_1",
+   "ORGANIZATION_TYPE",
+   "YEARS_EMPLOYED",
+   "CREDIT_TERM",
+   "AGE_YEARS",
+   "FLAG_OWN_CAR",
+   "CREDIT_INCOME_RATIO",
+   "ANNUITY_INCOME_RATIO",
+   "AMT_INCOME_TOTAL"
+  ]
+ },
+ "JT-A k5 la0.25": {
+  "top_A": [
+   "AMT_GOODS_PRICE",
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_CREDIT",
+   "EXT_SOURCE_1",
+   "AMT_INCOME_TOTAL",
+   "CREDIT_INCOME_RATIO",
+   "AMT_ANNUITY",
+   "CREDIT_TERM",
+   "YEARS_EMPLOYED",
+   "ANNUITY_INCOME_RATIO",
+   "EXT_SOURCE_1_MISSING",
+   "AGE_YEARS",
+   "ORGANIZATION_TYPE",
+   "OCCUPATION_TYPE"
+  ],
+  "top_B": [
+   "AMT_GOODS_PRICE",
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_CREDIT",
+   "AMT_ANNUITY",
+   "EXT_SOURCE_1",
+   "CREDIT_TERM",
+   "EXT_SOURCE_1_MISSING",
+   "FLAG_OWN_CAR",
+   "YEARS_EMPLOYED",
+   "ANNUITY_INCOME_RATIO",
+   "AGE_YEARS",
+   "AMT_INCOME_TOTAL",
+   "CREDIT_INCOME_RATIO",
+   "NAME_EDUCATION_TYPE"
+  ],
+  "new_in_B": [
+   "FLAG_OWN_CAR",
+   "NAME_EDUCATION_TYPE"
+  ],
+  "new_proxy_flags": {
+   "FLAG_OWN_CAR": true,
+   "NAME_EDUCATION_TYPE": false
+  },
+  "new_gender_auc": {
+   "FLAG_OWN_CAR": 0.6710045615312776,
+   "NAME_EDUCATION_TYPE": 0.5097098735781405
+  },
+  "top_B_in_before_top15": [
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_ANNUITY",
+   "EXT_SOURCE_1",
+   "CREDIT_TERM",
+   "FLAG_OWN_CAR",
+   "YEARS_EMPLOYED",
+   "ANNUITY_INCOME_RATIO",
+   "AGE_YEARS",
+   "AMT_INCOME_TOTAL",
+   "CREDIT_INCOME_RATIO"
+  ]
+ },
+ "JT-A k5 la0.5": {
+  "top_A": [
+   "AMT_GOODS_PRICE",
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_CREDIT",
+   "EXT_SOURCE_1",
+   "AMT_INCOME_TOTAL",
+   "CREDIT_INCOME_RATIO",
+   "AMT_ANNUITY",
+   "CREDIT_TERM",
+   "YEARS_EMPLOYED",
+   "ANNUITY_INCOME_RATIO",
+   "EXT_SOURCE_1_MISSING",
+   "AGE_YEARS",
+   "ORGANIZATION_TYPE",
+   "OCCUPATION_TYPE"
+  ],
+  "top_B": [
+   "AMT_GOODS_PRICE",
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "AMT_CREDIT",
+   "YEARS_EMPLOYED",
+   "AMT_ANNUITY",
+   "EXT_SOURCE_1",
+   "NAME_EDUCATION_TYPE",
+   "EXT_SOURCE_1_MISSING",
+   "FLAG_OWN_CAR",
+   "ANNUITY_INCOME_RATIO",
+   "CREDIT_TERM",
+   "CREDIT_INCOME_RATIO",
+   "AGE_YEARS",
+   "NAME_INCOME_TYPE"
+  ],
+  "new_in_B": [
+   "NAME_EDUCATION_TYPE",
+   "FLAG_OWN_CAR",
+   "NAME_INCOME_TYPE"
+  ],
+  "new_proxy_flags": {
+   "NAME_EDUCATION_TYPE": false,
+   "FLAG_OWN_CAR": true,
+   "NAME_INCOME_TYPE": false
+  },
+  "new_gender_auc": {
+   "NAME_EDUCATION_TYPE": 0.5097098735781405,
+   "FLAG_OWN_CAR": 0.6710045615312776,
+   "NAME_INCOME_TYPE": 0.578946008786607
+  },
+  "top_B_in_before_top15": [
+   "EXT_SOURCE_3",
+   "EXT_SOURCE_2",
+   "YEARS_EMPLOYED",
+   "AMT_ANNUITY",
+   "EXT_SOURCE_1",
+   "FLAG_OWN_CAR",
+   "ANNUITY_INCOME_RATIO",
+   "CREDIT_TERM",
+   "CREDIT_INCOME_RATIO",
+   "AGE_YEARS"
+  ]
+ }
+}

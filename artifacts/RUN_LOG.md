@@ -301,3 +301,11 @@ Run folder `artifacts/runs/20261101T104908Z_phase6/` (report/ = tables, taiwan/ 
 
 ## PHASE GATE: Phase 7, freeze + API + frontend  PASS
 tests 150 passed | parity < 1e-5 | p95 16.9 ms | explain 486 ms | tamper -> 503 | clean-venv load identical | UI check all steps true | notebook 07 0 errors | no test access (guard log unchanged)
+
+## Phase 8 RESULTS: figures, tables, summary (overnight run, 2026-11-01)
+- `scripts/make_all_figures_tables.py` regenerates 6 figures (`artifacts/figures/`) and the tables (`artifacts/tables/`) from the frozen bundle JSON and saved Phase 6 artifacts; no test-set access (guard logs unchanged: Home Credit 28 entries, Taiwan 8). Fix made: error-bar lengths clipped at zero where a seed-mean point estimate lies outside its bootstrap CI.
+- `artifacts/SUMMARY.md`: soft flags first; main test table (deployable vs analysis only); honest headline findings; configurations-tried counts; claims checklist (rules 19 to 22); threats to validity; reproduction steps.
+- Notebook `notebooks/08_figures_and_summary.ipynb` executed, 0 errors.
+
+## PHASE GATE: Phase 8, figures + summary  PASS
+figures script exit 0 | 6 figures, 11 tables | SUMMARY.md complete | notebook 08 0 errors | guard logs unchanged (28 / 8) | ruff clean on new scripts

@@ -72,7 +72,7 @@ def main() -> None:
     fig, ax = plt.subplots(1, 2, figsize=(13, 4.8))
     for a, (y, yl, lg) in zip(ax, [("auc_pr", "AUC-PR (higher better)", False), ("worst_group_ece", "worst-group ECE (lower better)", True)]):  # fmt: skip
         for _, r in dep.iterrows():
-            a.errorbar(r.eod, r[y], xerr=[[r.eod - r.eod_lo], [r.eod_hi - r.eod]], yerr=[[r[y] - r[y + "_lo"]], [r[y + "_hi"] - r[y]]],
+            a.errorbar(r.eod, r[y], xerr=[[max(r.eod - r.eod_lo, 0)], [max(r.eod_hi - r.eod, 0)]], yerr=[[max(r[y] - r[y + "_lo"], 0)], [max(r[y + "_hi"] - r[y], 0)]],
                        fmt="o", ms=7 if r.arm in ("JT chosen", "S2-EG", "S1", "A2") else 4, color=color_of(r.arm), lw=0.6, alpha=0.9)  # fmt: skip
             a.annotate(r.arm, (r.eod, r[y]), fontsize=7, xytext=(3, 3), textcoords="offset points")
         a.set_xlabel("EOD (lower better)")
@@ -199,7 +199,7 @@ def main() -> None:
         for a, rn in zip(ax, ("10% flag rate", "train default rate")):
             d = tt[(tt.rate == rn) & tt.deployable]
             for _, r in d.iterrows():
-                a.errorbar(r.eod, r.auc_pr, xerr=[[r.eod - r.eod_lo], [r.eod_hi - r.eod]], yerr=[[r.auc_pr - r.auc_pr_lo], [r.auc_pr_hi - r.auc_pr]], fmt="o", color=color_of(r.arm), lw=0.6)  # fmt: skip
+                a.errorbar(r.eod, r.auc_pr, xerr=[[max(r.eod - r.eod_lo, 0)], [max(r.eod_hi - r.eod, 0)]], yerr=[[max(r.auc_pr - r.auc_pr_lo, 0)], [max(r.auc_pr_hi - r.auc_pr, 0)]], fmt="o", color=color_of(r.arm), lw=0.6)  # fmt: skip
                 a.annotate(
                     r.arm, (r.eod, r.auc_pr), fontsize=7, xytext=(3, 3), textcoords="offset points"
                 )
