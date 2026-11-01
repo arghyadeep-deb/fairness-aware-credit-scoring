@@ -80,3 +80,19 @@ python scripts/make_all_figures_tables.py   # all figures and tables from the bu
 ```
 
 Test predictions live in `artifacts/test_preds/` (Home Credit) and `artifacts/test_preds_taiwan/`; all analysis reads these files only. Run folders: `artifacts/runs/` (Phase 6: `artifacts/phase6_rundir.txt`). Narrative and gates: `artifacts/RUN_LOG.md`. Notebooks: `notebooks/01` to `08`.
+
+## 8. Diagnostics (validation only; declared after the test run; NOT in the test table)
+
+Folder `artifacts/runs/20261102_diagE/` (tables copied to `artifacts/tables/diag_*.csv`). 3 seeds, 500 paired bootstrap resamples.
+- **JT-W (importance-weighted ECE term): not run, hypothesis rejected.** The stratified sampler reproduces the population (batch default rate 0.0806 vs 0.0807; gender share 0.3418 vs 0.3416; min-per-cell floor 64 never binds), so importance weights equal 1.0 and JT-W would equal JT chosen. A sampler mismatch is therefore not the reason the joint model underperforms.
+- **JT-A+PH** (spec GRL, 5 adversary steps, lambda_a 0.25, lambda_f 0.05, lambda_c 0, then S1 prior correction, then S2-EG v2), validation means:
+
+| Arm | AUC-ROC | AUC-PR | Worst-group ECE | EOD | DIR |
+|---|---|---|---|---|---|
+| JT chosen | .7428 | .2146 | .0189 | .0234 | .975 |
+| S2-EG | .7460 | .2212 | .0123 | .0108 | .984 |
+| JT-A+PH raw | .7399 | .2100 | .3263 | .0182 | .982 |
+| JT-A+PH + S1 | .7399 | .2100 | .0290 | .0182 | .982 |
+| JT-A+PH + S1 + S2-EG | .7399 | .2100 | .0290 | .0071 | .986 |
+
+Paired differences (95% CI): JT-A+PH + S1 + S2-EG minus S2-EG: AUC-ROC -0.0061 (sig.), AUC-PR -0.0112 (sig.), worst-group ECE +0.0159 (sig.), EOD -0.0012 (CI -0.0131 to 0.0109, not distinguishable). Versus JT chosen: AUC-PR -0.0045 (sig.), worst-group ECE +0.0108 (sig.), EOD -0.0113 (CI -0.0224 to 0.0007, not significant). Verdict: adding the multi-step adversary before the post-hoc steps costs ranking quality and calibration and gives no fairness gain that is distinguishable from S2-EG; the sequential baseline still stands. Validation numbers only; no test access was made (guard logs unchanged).

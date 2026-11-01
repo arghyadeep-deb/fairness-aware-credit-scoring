@@ -309,3 +309,6 @@ tests 150 passed | parity < 1e-5 | p95 16.9 ms | explain 486 ms | tamper -> 503 
 
 ## PHASE GATE: Phase 8, figures + summary  PASS
 figures script exit 0 | 6 figures, 11 tables | SUMMARY.md complete | notebook 08 0 errors | guard logs unchanged (28 / 8) | ruff clean on new scripts
+
+## Section E diagnostics (validation only; declared after the test run; not in the test table)
+JT-W not run: sampler check (batch default rate 0.0806 vs 0.0807, gender share 0.3418 vs 0.3416) shows importance weights = 1.0. JT-A+PH (k5, la 0.25, lf 0.05, lc 0, + S1 + S2-EG, 3 seeds) vs S2-EG on validation: AUC-PR -0.0112 (sig.), worst-group ECE +0.0159 (sig.), EOD -0.0012 (not significant). Details in SUMMARY.md section 8. Run folder `artifacts/runs/20261102_diagE/`. Guard logs unchanged (28 / 8). Script `scripts/phaseE_diagnostics.py`.
