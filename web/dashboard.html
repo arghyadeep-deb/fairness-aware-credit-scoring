@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard - credit scoring research prototype</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="top">
+    <h1>Fairness-aware credit scoring</h1>
+    <nav aria-label="Pages">
+      <a href="index.html">Applicant</a>
+      <a href="result.html">Result</a>
+      <a href="dashboard.html" aria-current="page">Dashboard</a>
+    </nav>
+  </header>
+  <div class="disclaimer" role="note">Research prototype. Trained on Home Credit (not Indian data). Not for real credit decisions.</div>
+  <main>
+    <div id="status" aria-live="polite"></div>
+    <div class="banner honest" id="honest">On this dataset the sequential baseline (class weights + prior correction + gender-blind fairness step) matched or beat the joint model.</div>
+    <section class="card"><h2>Fairness of the served model (test set)</h2>
+      <div class="cols"><div><div class="chart-box"><canvas id="fair" role="img" aria-label="Fairness bars"></canvas></div></div>
+      <div id="fairtxt" class="small"></div></div></section>
+    <section class="card"><h2>Calibration by gender group (test set)</h2>
+      <div class="cols"><div class="chart-box"><canvas id="calib" role="img" aria-label="Reliability diagram"></canvas></div><div id="caltxt" class="small"></div></div></section>
+    <section class="card"><h2>Proxy audit: is gender recoverable?</h2><div id="proxy" class="small"></div></section>
+    <section class="card"><h2>Trade-off explorer (validation sweep)</h2>
+      <p class="muted small">Move the sliders to request a (lambda_f, lambda_c, lambda_a) setting. The nearest point of the pre-computed sweep is shown; the deployed point is highlighted.</p>
+      <div class="cols"><div>
+        <div class="slider-row"><label for="lf">lambda_f</label><input type="range" id="lf" min="0" max="1" step="0.01" value="0.05"><output id="lfv">0.05</output></div>
+        <div class="slider-row"><label for="lc">lambda_c</label><input type="range" id="lc" min="0" max="8" step="0.5" value="2"><output id="lcv">2</output></div>
+        <div class="slider-row"><label for="la">lambda_a</label><input type="range" id="la" min="0" max="1" step="0.05" value="0"><output id="lav">0</output></div>
+        <div id="near" class="small" aria-live="polite"></div></div>
+        <div class="chart-box"><canvas id="trade" role="img" aria-label="Trade-off chart"></canvas></div></div></section>
+    <section class="card"><h2>All methods compared (test set, 95% CI)</h2>
+      <p class="muted small">Deployable = can be used without the applicant's gender at scoring time. Analysis-only arms use gender and are shown for reference only.</p>
+      <div class="tablewrap"><table id="cmp"></table></div></section>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>

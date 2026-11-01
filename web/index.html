@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Applicant form - credit scoring research prototype</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Fairness-aware credit scoring</h1>
+    <nav aria-label="Pages">
+      <a href="index.html" aria-current="page">Applicant</a>
+      <a href="result.html">Result</a>
+      <a href="dashboard.html">Dashboard</a>
+    </nav>
+  </header>
+  <div class="disclaimer" role="note">Research prototype. Trained on Home Credit (not Indian data). Not for real credit decisions.</div>
+  <main>
+    <h2>Applicant details</h2>
+    <p class="muted">There is no gender field: the model never sees gender. Fields and ranges come from the model bundle.</p>
+    <div id="status" aria-live="polite"></div>
+    <form id="applicant" class="card" novalidate>
+      <div id="fields" class="grid"></div>
+      <div class="actions">
+        <button type="submit" id="submit">Score applicant</button>
+        <button type="button" id="example" class="secondary">Load example applicant</button>
+        <button type="reset" class="secondary">Clear</button>
+      </div>
+    </form>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/form.js"></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Result - credit scoring research prototype</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="top">
+    <h1>Fairness-aware credit scoring</h1>
+    <nav aria-label="Pages">
+      <a href="index.html">Applicant</a>
+      <a href="result.html" aria-current="page">Result</a>
+      <a href="dashboard.html">Dashboard</a>
+    </nav>
+  </header>
+  <div class="disclaimer" role="note">Research prototype. Trained on Home Credit (not Indian data). Not for real credit decisions.</div>
+  <main>
+    <div id="status" aria-live="polite"></div>
+    <div id="empty" class="card" hidden>No applicant scored yet. <a href="index.html">Go to the form</a>.</div>
+    <div id="content" hidden>
+      <section class="card">
+        <h2>Estimated default probability</h2>
+        <div><span class="score" id="prob">-</span><span class="band" id="band"></span></div>
+        <p class="muted small" id="bandnote"></p>
+        <ul id="warnings" class="small"></ul>
+      </section>
+      <div class="cols">
+        <section class="card">
+          <h3>What pushed the score (top 10, logit units)</h3>
+          <div class="chart-box"><canvas id="shap" aria-label="SHAP contribution bars" role="img"></canvas></div>
+          <p class="muted small">Bars to the right raise the estimated default risk, bars to the left lower it, relative to an average training applicant.</p>
+        </section>
+        <section class="card">
+          <h3>Compare with a similar applicant of the other gender</h3>
+          <p class="muted small">Optional. The model never sees gender, so flipping it would change nothing. Instead we find the most similar applicant of the other gender in a reference pool and compare scores.</p>
+          <label for="gender">Your gender (only selects which pool to search)</label>
+          <select id="gender"><option value="">Choose...</option><option value="F">Female</option><option value="M">Male</option></select>
+          <div class="actions"><button id="match" class="secondary" type="button">Find matched applicant</button></div>
+          <div id="matched" class="small" aria-live="polite"></div>
+        </section>
+      </div>
+      <section class="card small">
+        <strong>What the numbers mean.</strong> The probability is the model's estimate that this applicant defaults, learned from historical Home Credit data. It is
+        a research output, not an approval decision. Matched-pair differences show how much the score moves between two very similar people of different gender; a
+        value near zero is the goal.
+        <div class="actions"><a class="btn secondary" href="index.html">Score another applicant</a></div>
+      </section>
+    </div>
+  </main>
+  <script src="js/api.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/result.js"></script>
+</body>
+</html>
