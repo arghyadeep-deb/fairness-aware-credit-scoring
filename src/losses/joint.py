@@ -41,6 +41,8 @@ class JointConfig:
     normalize: str = "none"  # "none" | "initial"; configs/train.yaml sets "initial" (Phase 4)
     ref_floor: float = 1e-3  # a reference below this is clamped (avoids dividing by ~0)
     adv_pretrain: bool = False  # DIAGNOSTIC (off): fit Head B on detached z during warm-up
+    adv_mode: str = "grl"  # "grl" (spec) | "confusion" (bounded CE to a 0.5 target, a deviation)
+    adv_lr_mult: float = 1.0  # learning-rate multiplier of Head B (rescue b)
 
     @classmethod
     def from_config(cls, cfg: dict[str, Any], **lambdas: float) -> "JointConfig":
@@ -82,7 +84,11 @@ class JointLoss(nn.Module):
         if "adv" in names:
             if adv_logit is None:
                 raise ValueError("lambda_a > 0 needs the adversary logit (use JointModel)")
-            out["adv"] = F.binary_cross_entropy_with_logits(adv_logit.float(), a.float())
+            if c.adv_mode == "confusion":  # trunk term: push the frozen head's output to p = 0.5
+                conf = adv_logit[1].float()
+                out["adv"] = F.binary_cross_entropy_with_logits(conf, torch.full_like(conf, 0.5))
+            else:
+                out["adv"] = F.binary_cross_entropy_with_logits(adv_logit.float(), a.float())
         return out
 
     def _observe_warmup(self, logit, y, a, adv_logit) -> None:
@@ -136,6 +142,10 @@ class JointLoss(nn.Module):
         total, parts = wce, {"wce": wce.detach()}
         if self.epoch < c.warmup_epochs:
             self._observe_warmup(logit, y, a, adv_logit)
+        if c.adv_mode == "confusion" and c.lambda_a > 0 and adv_logit is not None:
+            # Head B learns the true gender on detached z (never touches the trunk), also in warm-up
+            head = F.binary_cross_entropy_with_logits(adv_logit[0].float(), a.float())
+            total, parts["adv_head"] = total + head, head.detach()
         key = {"fair": "f", "cal": "c", "adv": "a"}
         active = [k for k, short in key.items() if lam[short] > 0]
         terms = self._raw_terms(logit, y, a, adv_logit, active)

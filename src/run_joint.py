@@ -49,14 +49,21 @@ def load_setup(cfg: dict[str, Any]):
 
 
 def run_point(
-    cfg, out_root: Path, lam, seed, setup, name: str = "jt", ablation_of: str | None = None
+    cfg,
+    out_root: Path,
+    lam,
+    seed,
+    setup,
+    name: str = "jt",
+    ablation_of: str | None = None,
+    schedule: dict | None = None,
 ) -> dict[str, Any]:
     device, train, val, cards, weights, hp = setup
     d = out_root / name / tag(lam) / f"seed_{seed}"
     if (d / "summary.json").exists():
         return json.loads((d / "summary.json").read_text())
     t0 = time.time()
-    r = fit_joint(cfg, hp, train, val, cards, weights, seed, device, lam)
+    r = fit_joint(cfg, hp, train, val, cards, weights, seed, device, lam, schedule=schedule)
     prob = sigmoid(r["val_logits"])
     flags, thr = flags_from_shared_rule(prob, cfg["evaluation"]["flag_rate"])
     m = compute_metrics(val.y, prob, val.a, flags, cfg["evaluation"]["ece_bins"])
@@ -76,6 +83,7 @@ def run_point(
         "threshold": thr,
         "adv_head_auc_best": r["history"][r["best_epoch"]]["adv_head_auc"],
         "ablation_of": ablation_of,
+        "schedule_overrides": schedule or {},
         **{f"val_{k}": v for k, v in m.items()},
     }
     save_predictions(d, prob, flags, info)
@@ -152,11 +160,12 @@ def sweep(cfg, args) -> None:
         {"git_hash": git_hash(), "points": pts, "seeds": seeds, "name": args.name,
          "split": "validation only", "hp": setup[5]},
     )  # fmt: skip
+    sched = {"adv_mode": args.adv_mode} if args.adv_mode != "grl" else None
     t0 = time.time()
     done = 0
     for lam in pts:
         for s in seeds:
-            run_point(cfg, run_dir, lam, s, setup, name=args.name, ablation_of=args.ablation_of)
+            run_point(cfg, run_dir, lam, s, setup, args.name, args.ablation_of, sched)
             done += 1
             el = time.time() - t0
             log.info("progress %d/%d runs, %.1f min elapsed", done, len(pts) * len(seeds), el / 60)
@@ -173,6 +182,7 @@ def main() -> None:
     p.add_argument("--seeds", nargs="*", type=int)
     p.add_argument("--name", default="jt")
     p.add_argument("--ablation-of", default=None)
+    p.add_argument("--adv-mode", default="grl", choices=["grl", "confusion"])
     args = p.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
     cfg = load_config(args.config)

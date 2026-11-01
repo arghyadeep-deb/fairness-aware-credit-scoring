@@ -223,3 +223,107 @@ def test_fit_joint_runs_logs_gender_head_and_selects_only_after_ramp():
     assert res["best_epoch"] >= 2  # first epoch ending at full strength = ceil(1+2)-1
     assert res["norm_reference"] is not None and not res["below_auc_floor"]
     assert [x["ramp"] for x in h][0] == 0.0 and h[-1]["ramp"] == 1.0
+
+
+# ---------- Phase 4 continuation: confusion adversary + rule application ----------
+def conf_setup(la=1.0):
+    from src.losses.joint import JointConfig, JointLoss
+    from src.models.heads import JointModel
+    from src.models.nets import build_model
+
+    cfg = JointConfig.from_config(CFG, lambda_f=0.0, lambda_c=0.0, lambda_a=la)
+    cfg.warmup_epochs, cfg.ramp_epochs, cfg.adv_mode = 0, 0, "confusion"
+    model = JointModel(build_model("mlp", 8, CARDS, CFG["model_defaults"], {}), 32, "confusion")
+    return JointLoss(cfg, W["0"], W["1"]), model
+
+
+def test_confusion_term_updates_trunk_only_and_head_term_updates_head_only():
+    loss, model = conf_setup()
+    g = torch.Generator().manual_seed(0)
+    xc, xk = torch.randn(256, 8, generator=g), torch.zeros(256, 3, dtype=torch.long)
+    y = (torch.rand(256, generator=g) < 0.2).float()
+    a = (torch.rand(256, generator=g) < 0.5).long()
+    loss.set_epoch(1.0)
+    logit, _, adv = model(xc, xk)
+    assert isinstance(adv, tuple)
+    _, parts = loss(logit, y, a, adv)
+    assert {"adv", "adv_head"} <= set(parts)
+    # gradient of ONLY the confusion term: reaches the trunk, never the adversary head
+    model.zero_grad()
+    conf = torch.nn.functional.binary_cross_entropy_with_logits(
+        adv[1], torch.full_like(adv[1], 0.5)
+    )
+    conf.backward()
+    assert all(p.grad is None or p.grad.abs().sum() == 0 for p in model.adversary.parameters())
+    assert any(p.grad is not None and p.grad.abs().sum() > 0 for p in model.backbone.parameters())
+    # gradient of ONLY the head term: reaches the head, never the trunk (z is detached)
+    model.zero_grad()
+    logit, _, adv = model(xc, xk)
+    torch.nn.functional.binary_cross_entropy_with_logits(adv[0], a.float()).backward()
+    assert any(p.grad is not None and p.grad.abs().sum() > 0 for p in model.adversary.parameters())
+    assert all(p.grad is None or p.grad.abs().sum() == 0 for p in model.backbone.parameters())
+
+
+def test_confusion_loss_is_bounded_and_minimal_at_half():
+    z = torch.linspace(-30, 30, 121)
+    v = torch.nn.functional.binary_cross_entropy_with_logits(
+        z, torch.full_like(z, 0.5), reduction="none"
+    )
+    assert v.min().item() == pytest.approx(0.6931, abs=1e-3) and abs(v[60].item() - 0.6931) < 1e-3
+    assert v.max().item() <= 15.5  # grows only linearly (GRL BCE-maximisation has no such floor)
+
+
+def fake_agg(rows):
+    import pandas as pd
+
+    base = {"name": "jt", "lambda_f": 0.0, "lambda_c": 0.0, "lambda_a": 0.0, "dir": 0.95}
+    return pd.DataFrame([{**base, "tag": f"p{i}", **r} for i, r in enumerate(rows)])
+
+
+def test_rule_base_relaxation_order_and_fallback():
+    from src.eval.sweep_eval import apply_rule, load_rule
+
+    rule = load_rule()
+    ref = {"a2_auc_roc": 0.746, "s1_worst_group_ece": 0.0123, "a2_eod": 0.076}
+    # base rule: bound 0.02, margin 0.02. p1 has the best AUC-PR but breaks ECE; p0 qualifies.
+    ok = fake_agg([
+        dict(eod=0.03, auc_roc=0.735, auc_pr=0.20, worst_group_ece=0.015),
+        dict(eod=0.03, auc_roc=0.74, auc_pr=0.22, worst_group_ece=0.03),
+    ])  # fmt: skip
+    r = apply_rule(ok, rule, ref)
+    assert r["step"] == "base rule" and r["chosen"]["tag"] == "p0"
+    # only the 2.0x ECE bound (0.0246) admits p0 -> first relaxation
+    r = apply_rule(
+        fake_agg([dict(eod=0.03, auc_roc=0.74, auc_pr=0.2, worst_group_ece=0.024)]), rule, ref
+    )
+    assert r["step"].startswith("relax worst_group_ece.multiplier") and r[
+        "ece_bound"
+    ] == pytest.approx(0.02460, abs=1e-4)
+    # needs the AUC margin 0.03 as well
+    r = apply_rule(
+        fake_agg([dict(eod=0.03, auc_roc=0.7185, auc_pr=0.2, worst_group_ece=0.024)]), rule, ref
+    )
+    assert "auc_roc_margin" in r["step"]
+    # nothing feasible -> fallback with soft flag, max AUC-PR with DIR >= 0.8 and AUC >= 0.6
+    r = apply_rule(
+        fake_agg(
+            [
+                dict(eod=0.09, auc_roc=0.74, auc_pr=0.2, worst_group_ece=0.3),
+                dict(eod=0.08, auc_roc=0.74, auc_pr=0.25, worst_group_ece=0.3),
+            ]
+        ),
+        rule,
+        ref,
+    )
+    assert r["soft_flag"] and r["chosen"]["tag"] == "p1"
+
+
+def test_pareto_mask_drops_dominated_points():
+    from src.eval.sweep_eval import pareto_mask
+
+    agg = fake_agg([
+        dict(auc_roc=0.74, eod=0.08, worst_group_ece=0.3),
+        dict(auc_roc=0.74, eod=0.05, worst_group_ece=0.3),   # dominates p0
+        dict(auc_roc=0.70, eod=0.01, worst_group_ece=0.02),  # trade-off point stays
+    ])  # fmt: skip
+    assert pareto_mask(agg).tolist() == [False, True, True]

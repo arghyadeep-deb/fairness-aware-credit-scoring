@@ -38,6 +38,7 @@ def predict_joint(model: JointModel, arr: Arrays, device, batch: int = 8192):
     for i in range(0, len(xc), batch):
         with torch.autocast("cuda", dtype=torch.bfloat16, enabled=device.type == "cuda"):
             out_l, z, d = model(xc[i : i + batch], xk[i : i + batch])
+        d = d[0] if isinstance(d, tuple) else d
         lg.append(out_l.float().cpu())
         ad.append(d.float().cpu())
         zs.append(z.float().cpu())
@@ -59,10 +60,13 @@ def _once(cfg, hp, train, val, cards, weights, seed, device, jc, max_epochs, lr_
     seed_everything(seed)
     gen = torch.Generator().manual_seed(seed)
     backbone = build_model("tabtransformer", train.cont.shape[1], cards, cfg["model_defaults"], hp)
-    model = JointModel(backbone, cfg["joint"]["adversary_hidden"]).to(device)
-    opt = torch.optim.AdamW(
-        model.parameters(), lr=hp["lr"] * lr_scale, weight_decay=hp["weight_decay"]
-    )
+    model = JointModel(backbone, cfg["joint"]["adversary_hidden"], jc.adv_mode).to(device)
+    lr = hp["lr"] * lr_scale
+    groups = [
+        {"params": list(model.backbone.parameters()), "lr": lr},
+        {"params": list(model.adversary.parameters()), "lr": lr * jc.adv_lr_mult},
+    ]
+    opt = torch.optim.AdamW(groups, weight_decay=hp["weight_decay"])
     loss_fn = JointLoss(jc, weights["0"], weights["1"])
     xc, xk = torch.from_numpy(train.cont).to(device), torch.from_numpy(train.cat).to(device)
     yt = torch.from_numpy(train.y).float().to(device)
