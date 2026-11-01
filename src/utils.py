@@ -1,4 +1,5 @@
 """Shared helpers: config loading, seeding, repo paths, git hash, MLflow URI."""
+
 from __future__ import annotations
 
 import os
@@ -67,6 +68,6 @@ def mlflow_tracking_uri(cfg: dict[str, Any]) -> str:
     prefix = "sqlite:///"
     if not uri.startswith(prefix):
         raise ValueError(f"MLflow URI must be sqlite:///..., got {uri}")
-    db = resolve(uri[len(prefix):])
+    db = resolve(uri[len(prefix) :])
     db.parent.mkdir(parents=True, exist_ok=True)
     return prefix + db.as_posix()

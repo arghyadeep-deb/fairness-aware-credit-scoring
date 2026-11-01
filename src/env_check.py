@@ -1,4 +1,5 @@
 """Stage 0 environment check: GPU, libraries, MLflow (SQLite) round-trip, both datasets."""
+
 from __future__ import annotations
 
 import sys

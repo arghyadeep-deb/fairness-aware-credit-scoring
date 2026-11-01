@@ -14,3 +14,4 @@ artifacts/*
 kaggle.json
 *.pt
 *.joblib
+!artifacts/RUN_LOG.md
