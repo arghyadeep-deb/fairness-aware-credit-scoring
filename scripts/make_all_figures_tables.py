@@ -47,7 +47,11 @@ def md_table(df: pd.DataFrame, cols: list[str], fmt: str = "{:.4f}") -> str:
 def color_of(arm: str) -> str:
     if arm.startswith("JT") or arm.startswith("H"):
         return COL["jt"]
-    if arm.startswith("S") or arm in ("per-group Platt", "per-group isotonic", "ThresholdOptimizer"):
+    if arm.startswith("S") or arm in (
+        "per-group Platt",
+        "per-group isotonic",
+        "ThresholdOptimizer",
+    ):
         return COL["post"]
     if arm.startswith("A") or arm in ("G1", "REF", "GI"):
         return COL["base"]
@@ -75,14 +79,20 @@ def main() -> None:
         a.set_ylabel(yl)
         if lg:
             a.set_yscale("log")
-    ax[0].set_title("Deployable arms on TEST (95% CI); red = joint/hybrid, blue = post-hoc, grey = baselines", fontsize=9)
+    ax[0].set_title(
+        "Deployable arms on TEST (95% CI); red = joint/hybrid, blue = post-hoc, grey = baselines",
+        fontsize=9,
+    )
     plt.tight_layout()
     plt.savefig(FIG / "pareto_deployable_test.png", dpi=160)
     plt.close()
     # ---- reliability diagrams per gender ----
     cal = jload("calibration")
     fig, ax = plt.subplots(figsize=(5, 5))
-    mx = max(max(b["mean_pred"], b["frac_pos"]) for g in cal["groups"].values() for b in g["bins"]) * 1.1
+    mx = (
+        max(max(b["mean_pred"], b["frac_pos"]) for g in cal["groups"].values() for b in g["bins"])
+        * 1.1
+    )
     for g, c in (("M", "#1f5fbf"), ("F", "#a8326f")):
         bins = cal["groups"][g]["bins"]
         ax.plot([b["mean_pred"] for b in bins], [b["frac_pos"] for b in bins], "o-", color=c, label=f"{g} (ECE {cal['groups'][g]['ece']:.4f})")  # fmt: skip
@@ -98,10 +108,16 @@ def main() -> None:
     px = jload("proxy_audit")
     la = pd.read_csv(p6 / "report" / "leakage_after.csv")
     la.to_csv(TAB / "leakage_after.csv", index=False)
-    labels = ["features (before)", "z: A2 (after)", "z: JT chosen (after)"] + [a.replace("JT-A ", "z: ") for a in la.arm if a.startswith("JT-A")]
+    labels = ["features (before)", "z: A2 (after)", "z: JT chosen (after)"] + [
+        a.replace("JT-A ", "z: ") for a in la.arm if a.startswith("JT-A")
+    ]
     vals = [px["before_auc_features"], px["after_auc_z"]["A2"], px["after_auc_z"]["JT"]] + [float(v) for a, v in zip(la.arm, la.probe_lgbm_test_auc) if a.startswith("JT-A")]  # fmt: skip
     fig, ax = plt.subplots(figsize=(9, 4))
-    ax.bar(range(len(vals)), vals, color=["#444"] + [COL["base"], COL["jt"]] + ["#d98b84"] * (len(vals) - 3))
+    ax.bar(
+        range(len(vals)),
+        vals,
+        color=["#444"] + [COL["base"], COL["jt"]] + ["#d98b84"] * (len(vals) - 3),
+    )
     ax.axhline(0.5, color="k", lw=0.8, ls=":")
     ax.set_xticks(range(len(vals)), labels, rotation=35, ha="right", fontsize=8)
     ax.set_ylabel("gender-probe ROC-AUC (test)")
@@ -118,7 +134,14 @@ def main() -> None:
     fr = pd.DataFrame(tr["frontier"]).sort_values("eod")
     ax.plot(fr.eod, fr.auc_pr, "-", color="#333", lw=0.8, label="non-dominated")
     s = tr["selected"]
-    ax.scatter([s["eod"]], [s["auc_pr"]], marker="D", s=90, color="#d62728", label="rule-selected (0.05, 2, 0)")
+    ax.scatter(
+        [s["eod"]],
+        [s["auc_pr"]],
+        marker="D",
+        s=90,
+        color="#d62728",
+        label="rule-selected (0.05, 2, 0)",
+    )
     plt.colorbar(sc, label="lambda_c")
     ax.set_xlabel("validation EOD")
     ax.set_ylabel("validation AUC-PR")
@@ -131,8 +154,20 @@ def main() -> None:
     f = jload("fairness")
     fig, ax = plt.subplots(figsize=(5, 4))
     w = 0.35
-    ax.bar(np.arange(2) - w / 2, [f["per_group"]["M"]["tpr"], f["per_group"]["M"]["fpr"]], w, label="male", color="#1f5fbf")
-    ax.bar(np.arange(2) + w / 2, [f["per_group"]["F"]["tpr"], f["per_group"]["F"]["fpr"]], w, label="female", color="#a8326f")
+    ax.bar(
+        np.arange(2) - w / 2,
+        [f["per_group"]["M"]["tpr"], f["per_group"]["M"]["fpr"]],
+        w,
+        label="male",
+        color="#1f5fbf",
+    )
+    ax.bar(
+        np.arange(2) + w / 2,
+        [f["per_group"]["F"]["tpr"], f["per_group"]["F"]["fpr"]],
+        w,
+        label="female",
+        color="#a8326f",
+    )
     ax.set_xticks([0, 1], ["TPR", "FPR"])
     ax.legend()
     ax.set_title(f"Served model, test: EOD {f['eod']:.4f}, DIR {f['dir']:.3f}")
@@ -140,7 +175,13 @@ def main() -> None:
     plt.savefig(FIG / "fairness_groups.png", dpi=160)
     plt.close()
     # ---- saved report tables copied for the paper ----
-    for name in ("val_vs_test.csv", "paired_diffs_test.csv", "matched_pair.csv", "guard_audit.json", "shap_proxy.json"):
+    for name in (
+        "val_vs_test.csv",
+        "paired_diffs_test.csv",
+        "matched_pair.csv",
+        "guard_audit.json",
+        "shap_proxy.json",
+    ):
         src = p6 / "report" / name
         if src.exists():
             (TAB / name).write_bytes(src.read_bytes())
@@ -159,7 +200,9 @@ def main() -> None:
             d = tt[(tt.rate == rn) & tt.deployable]
             for _, r in d.iterrows():
                 a.errorbar(r.eod, r.auc_pr, xerr=[[r.eod - r.eod_lo], [r.eod_hi - r.eod]], yerr=[[r.auc_pr - r.auc_pr_lo], [r.auc_pr_hi - r.auc_pr]], fmt="o", color=color_of(r.arm), lw=0.6)  # fmt: skip
-                a.annotate(r.arm, (r.eod, r.auc_pr), fontsize=7, xytext=(3, 3), textcoords="offset points")
+                a.annotate(
+                    r.arm, (r.eod, r.auc_pr), fontsize=7, xytext=(3, 3), textcoords="offset points"
+                )
             a.set_xlabel("EOD")
             a.set_ylabel("AUC-PR")
             a.set_title(f"UCI Taiwan, test, {rn}", fontsize=9)

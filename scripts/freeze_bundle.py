@@ -47,12 +47,17 @@ def write_json(path: Path, obj) -> None:
 
 
 def pick_seed(p4: Path) -> tuple[int, dict]:
-    vals = {s: json.loads((p4 / "jt" / JT_TAG / f"seed_{s}" / "summary.json").read_text())["val_auc_pr"] for s in SEEDS}
+    vals = {
+        s: json.loads((p4 / "jt" / JT_TAG / f"seed_{s}" / "summary.json").read_text())["val_auc_pr"]
+        for s in SEEDS
+    }
     s = max(vals, key=vals.get)
     return s, vals
 
 
-def inverse_example(pre: Preprocessor, cont: np.ndarray, cat: np.ndarray, spec: dict) -> dict | None:
+def inverse_example(
+    pre: Preprocessor, cont: np.ndarray, cat: np.ndarray, spec: dict
+) -> dict | None:
     """Scaled arrays -> raw ApplicantRecord dict (no gender). Returns None if not representable."""
     names = spec["cont_names"]
     num = pre.groups["numeric"]
@@ -67,7 +72,11 @@ def inverse_example(pre: Preprocessor, cont: np.ndarray, cat: np.ndarray, spec: 
         "amt_annuity": round(float(raw["AMT_ANNUITY"]), 0),
         "amt_goods_price": round(float(raw["AMT_GOODS_PRICE"]), 0),
         "region_population_relative": round(float(raw["REGION_POPULATION_RELATIVE"]), 5),
-        "years_employed": None if x["EMPLOYED_MISSING"] > 0.5 else round(max(0.0, float(raw["YEARS_EMPLOYED"])), 1),
+        "years_employed": (
+            None
+            if x["EMPLOYED_MISSING"] > 0.5
+            else round(max(0.0, float(raw["YEARS_EMPLOYED"])), 1)
+        ),
         "flag_own_car": "Y" if x["FLAG_OWN_CAR"] > 0.5 else "N",
         "flag_own_realty": "Y" if x["FLAG_OWN_REALTY"] > 0.5 else "N",
     }
@@ -85,8 +94,16 @@ def inverse_example(pre: Preprocessor, cont: np.ndarray, cat: np.ndarray, spec: 
                 return None
         else:
             rec[mapping[c]] = inv[int(v)]
-    ok = 18 <= rec["age_years"] <= 100 and rec["cnt_children"] <= 20 and rec["cnt_fam_members"] <= 25
-    ok = ok and min(rec["amt_income_total"], rec["amt_credit"], rec["amt_annuity"], rec["amt_goods_price"]) > 0
+    ok = (
+        18 <= rec["age_years"] <= 100 and rec["cnt_children"] <= 20 and rec["cnt_fam_members"] <= 25
+    )
+    ok = (
+        ok
+        and min(
+            rec["amt_income_total"], rec["amt_credit"], rec["amt_annuity"], rec["amt_goods_price"]
+        )
+        > 0
+    )
     ok = ok and 0 <= rec["region_population_relative"] <= 1
     ok = ok and (rec["years_employed"] is None or rec["years_employed"] <= 60)
     return rec if ok else None
@@ -106,7 +123,11 @@ def main() -> None:
     cont_names, cat_names = order["numeric"] + order["binary"], order["categorical"]
     # ---- model: the backbone of the JT checkpoint (Head B is never served) ----
     state = torch.load(p4 / "jt" / JT_TAG / f"seed_{seed}" / "best.pt", map_location="cpu")
-    bb = {k[len("backbone."):]: v.float().cpu() for k, v in state.items() if k.startswith("backbone.")}
+    bb = {
+        k[len("backbone.") :]: v.float().cpu()
+        for k, v in state.items()
+        if k.startswith("backbone.")
+    }
     (OUT / "model").mkdir(parents=True)
     torch.save(bb, OUT / "model" / "backbone.pt")
     spec = {"n_cont": len(cont_names), "cards": [card[c] for c in cat_names], "model_defaults": cfg["model_defaults"],
@@ -122,28 +143,43 @@ def main() -> None:
     # ---- SHAP background: 100 TRAIN rows ----
     train, _ = load_arrays(cfg, "train")
     ix = np.sort(np.random.default_rng(0).choice(len(train.y), 100, replace=False))
-    np.savez(OUT / "shap_background.npz", cont=train.cont[ix].astype("float32"), cat=train.cat[ix].astype("int64"))
+    np.savez(
+        OUT / "shap_background.npz",
+        cont=train.cont[ix].astype("float32"),
+        cat=train.cat[ix].astype("int64"),
+    )
     # ---- matched-pair pool = saved test arrays (no test loader) ----
     tz = np.load(ROOT / "artifacts" / "test_preds" / "test_arrays.npz")
-    pc, pk, pa, py = tz["cont"].astype("float32"), tz["cat"].astype("int64"), tz["a"].astype("int8"), tz["y"]
+    pc, pk, pa, py = (
+        tz["cont"].astype("float32"),
+        tz["cat"].astype("int64"),
+        tz["a"].astype("int8"),
+        tz["y"],
+    )
     np.savez(OUT / "matched_pool.npz", cont=pc, cat=pk, a=pa)
     # ---- served path used for every precomputed number (fp32 CPU, same as the API) ----
     tmp = Bundle(OUT, {"model_version": "tmp", "bundle_sha": "tmp", "risk_bands": {}}, None, None, spec,
                  None, None, pc, pk, pa)  # fmt: skip
     from api.bundle import build_model  # noqa: E402 (re-exported import)
 
-    model = build_model("tabtransformer", spec["n_cont"], spec["cards"], spec["model_defaults"], spec["hp"])
+    model = build_model(
+        "tabtransformer", spec["n_cont"], spec["cards"], spec["model_defaults"], spec["hp"]
+    )
     model.load_state_dict(bb)
     model.eval()
     tmp.model = model
-    p_pool = np.concatenate([predict_arrays(tmp, pc[i : i + 8192], pk[i : i + 8192]) for i in range(0, len(pc), 8192)])
+    p_pool = np.concatenate(
+        [predict_arrays(tmp, pc[i : i + 8192], pk[i : i + 8192]) for i in range(0, len(pc), 8192)]
+    )
     saved = np.load(ROOT / "artifacts" / "test_preds" / "JT_chosen" / f"seed_{seed}" / "pt.npy")
     gap_bf16 = float(np.abs(saved - p_pool).max())  # Phase 6 scored with bf16 autocast on GPU
     # ---- fairness / calibration at the shared decision rule ----
-    meta = json.loads((ROOT / "artifacts/test_preds/JT_chosen" / f"seed_{seed}" / "meta.json").read_text())
+    meta = json.loads(
+        (ROOT / "artifacts/test_preds/JT_chosen" / f"seed_{seed}" / "meta.json").read_text()
+    )
     thr = meta["threshold_from_val"]
     y, a = py, pa
-    flags = (saved >= thr)  # the Phase 6 rule: val 90th percentile threshold applied to test scores
+    flags = saved >= thr  # the Phase 6 rule: val 90th percentile threshold applied to test scores
     m = compute_metrics(y, saved, a, flags, 15)
     boot = bootstrap_metrics(y, saved, a, flags, 1000, 0, 15, n_jobs=4, chunk_size=100)
     lo, hi = np.nanpercentile(boot, 2.5, axis=0), np.nanpercentile(boot, 97.5, axis=0)
@@ -191,16 +227,27 @@ def main() -> None:
             if not sm:
                 continue
             lam = sm[0]["lambdas"]
-            row = {"lambda_f": lam["f"], "lambda_c": lam["c"], "lambda_a": lam["a"], "n_seeds": len(sm)}
+            row = {
+                "lambda_f": lam["f"],
+                "lambda_c": lam["c"],
+                "lambda_a": lam["a"],
+                "n_seeds": len(sm),
+            }
             for k in ("auc_roc", "auc_pr", "dir", "eod", "worst_group_ece"):
                 row[k] = float(np.mean([s[f"val_{k}"] for s in sm]))
             pts.append(row)
     df = pd.DataFrame(pts).drop_duplicates(["lambda_f", "lambda_c", "lambda_a"], keep="last")
     front = []
     for i, r in df.iterrows():  # non-dominated in (auc_pr up, eod down)
-        if not ((df.auc_pr >= r.auc_pr) & (df.eod <= r.eod) & ((df.auc_pr > r.auc_pr) | (df.eod < r.eod))).any():
+        if not (
+            (df.auc_pr >= r.auc_pr)
+            & (df.eod <= r.eod)
+            & ((df.auc_pr > r.auc_pr) | (df.eod < r.eod))
+        ).any():
             front.append({k: float(v) for k, v in r.items()})
-    sel = df[(df.lambda_f == LAMBDAS[0]) & (df.lambda_c == LAMBDAS[1]) & (df.lambda_a == LAMBDAS[2])].iloc[0]
+    sel = df[
+        (df.lambda_f == LAMBDAS[0]) & (df.lambda_c == LAMBDAS[1]) & (df.lambda_a == LAMBDAS[2])
+    ].iloc[0]
     write_json(OUT / "json" / "tradeoff.json", {"points": [{k: float(v) for k, v in r.items()} for _, r in df.iterrows()],
                                                  "frontier": front, "selected": {k: float(v) for k, v in sel.items()},
                                                  "source": "validation set, mean over seeds; rule-selected point (0.05, 2, 0)"})  # fmt: skip
@@ -227,10 +274,14 @@ def main() -> None:
             break
     write_json(OUT / "examples.json", {"examples": exs, "source": "held-out test rows (seed 7), identifiers and gender removed"})  # fmt: skip
     # ---- reproducibility files ----
-    freeze = subprocess.run([sys.executable, "-m", "pip", "freeze"], capture_output=True, text=True).stdout
+    freeze = subprocess.run(
+        [sys.executable, "-m", "pip", "freeze"], capture_output=True, text=True
+    ).stdout
     (OUT / "requirements_freeze.txt").write_text(freeze, encoding="utf-8")
     cfgs = "".join(sha256_file(p) for p in sorted((ROOT / "configs").glob("*.yaml")))
-    files = {p.relative_to(OUT).as_posix(): sha256_file(p) for p in sorted(OUT.rglob("*")) if p.is_file()}
+    files = {
+        p.relative_to(OUT).as_posix(): sha256_file(p) for p in sorted(OUT.rglob("*")) if p.is_file()
+    }
     rb = {"low_max": float(json.loads((prep_dir / "prep_report.json").read_text())["splits"]["train"]["default_rate"]), "medium_max": float(thr)}  # fmt: skip
     manifest = {"model_version": f"jt-chosen-0.05-2-0-seed{seed}-{VERSION}", "git_commit": git_hash(),
                 "config_hash": hashlib.sha256(cfgs.encode()).hexdigest(), "seeds": SEEDS, "served_seed": seed,

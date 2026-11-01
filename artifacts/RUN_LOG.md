@@ -1,5 +1,7 @@
 # RUN_LOG
 
+> **SOFT FLAGS (overnight run, 2026-11-01; details in the Phase 6 RESULTS entry):** JT chosen does not beat the sequential baseline (S1/S2-EG) on fairness, calibration or AUC; its validation EOD was optimistic (0.0234 -> 0.0363 test); spec-GRL JT does not lower leakage in z (0.801 vs A2 0.791); FLAG_OWN_CAR is a possible new proxy; matched-pair deltas not reduced; worst-group ECE of JT at the 0.02 cap; mixed SHAP sample sizes (4,000/5,000); Taiwan JT loses 0.05 AUC-PR; unauthorised Codex edits kept after review.
+
 Soft flags (top of file, newest first): none raised so far.
 Recorded gate result (accepted by owner, unchanged): Phase 2 Stage 3 "A1 calibrates worse than A2" FAILED (first run A1 ECE 0.152 < A2 0.342; re-run 0.139 < 0.333). A1 at ratio 0.5 shifts the prior ~5.7x vs ~11.4x for class weights, so it is not a like-for-like comparison. A1b (ratio 1.0) ECE 0.237 is also below A2.
 
@@ -234,3 +236,56 @@ Owner requested sequential one-arm processes; no new Home Credit test access. Al
 - tests/test_leakage.py guard test updated: Phase 1 whitelisted entry plus one `phase6:<arm>` entry per arm (never two for an arm).
 - Stale JT_tuned_attempt0.json in memory_resume_20261101T145440Z marked cancelled (file kept).
 - Mixed SHAP sample counts: 17 arms analysed with 4,000 test rows, remaining arms with 5,000 (or 2,000 after a retry).
+
+## Phase 6 memory-safe resume 20261101T163054Z
+Owner requested sequential one-arm processes; no new Home Credit test access. All done.json arms preserved. Threads/jobs4, float32, SHAP100background/4000train/5000cachedtest/batch500 (seed0 only), bootstrap100-resample blocks. Earlier completed arms retain their original4000test-row SHAP protocol; mixed sample counts are a documented deviation. JT-W/JT-A+PH undeclared, not run. Two earlier analyze kills were memory stops; incomplete attempt outputs are archived.
+
+- Skip `JT chosen`: existing done.json, unchanged.
+- START `JT tuned` attempt0: SHAP test rows=5000.
+- EXIT `JT tuned` attempt0: native=0; psutil peak RSS=4440064bytes; peak process-tree RSS=1750138880bytes; wall=1275.3239696999954s; SHAP test rows=5000.
+- START `H1` attempt0: SHAP test rows=5000.
+- EXIT `H1` attempt0: native=0; psutil peak RSS=4349952bytes; peak process-tree RSS=933425152bytes; wall=26.53135909998673s; SHAP test rows=5000.
+- START `H2` attempt0: SHAP test rows=5000.
+- EXIT `H2` attempt0: native=0; psutil peak RSS=4349952bytes; peak process-tree RSS=933900288bytes; wall=26.005782199994428s; SHAP test rows=5000.
+- START `H3` attempt0: SHAP test rows=5000.
+- EXIT `H3` attempt0: native=0; psutil peak RSS=4345856bytes; peak process-tree RSS=934060032bytes; wall=25.512753899995005s; SHAP test rows=5000.
+- START `JT-A k3 la0.1` attempt0: SHAP test rows=5000.
+- EXIT `JT-A k3 la0.1` attempt0: native=0; psutil peak RSS=4444160bytes; peak process-tree RSS=1945427968bytes; wall=678.6926889999886s; SHAP test rows=5000.
+- START `JT-A k3 la0.25` attempt0: SHAP test rows=5000.
+- EXIT `JT-A k3 la0.25` attempt0: native=0; psutil peak RSS=4444160bytes; peak process-tree RSS=1957888000bytes; wall=527.7112625000009s; SHAP test rows=5000.
+- START `JT-A k3 la0.5` attempt0: SHAP test rows=5000.
+- EXIT `JT-A k3 la0.5` attempt0: native=0; psutil peak RSS=4448256bytes; peak process-tree RSS=1948508160bytes; wall=513.4406476999866s; SHAP test rows=5000.
+- START `JT-A k5 la0.1` attempt0: SHAP test rows=5000.
+- EXIT `JT-A k5 la0.1` attempt0: native=0; psutil peak RSS=4448256bytes; peak process-tree RSS=1948798976bytes; wall=528.087113799993s; SHAP test rows=5000.
+- START `JT-A k5 la0.25` attempt0: SHAP test rows=5000.
+- EXIT `JT-A k5 la0.25` attempt0: native=0; psutil peak RSS=4448256bytes; peak process-tree RSS=1921847296bytes; wall=523.2528695000219s; SHAP test rows=5000.
+- START `JT-A k5 la0.5` attempt0: SHAP test rows=5000.
+- EXIT `JT-A k5 la0.5` attempt0: native=0; psutil peak RSS=4448256bytes; peak process-tree RSS=1944539136bytes; wall=533.0808286999818s; SHAP test rows=5000.
+- Remaining arm analysis complete; original Home Credit guard and selection rule hashes unchanged.
+
+
+## Phase 6 RESULTS: final verification on the test set (Home Credit) + UCI Taiwan retrain
+Run folder `artifacts/runs/20261101T104908Z_phase6/` (report/ = tables, taiwan/ = Taiwan). All numbers are test-set means over 3 seeds (JT-A: 5 seeds) at the shared rule (flag the top 10% by validation 90th-percentile threshold), 95% paired bootstrap CIs (1,000 resamples; chunked, equality with a single-process reference tested). Deployable/analysis-only is marked in every table (`test_table.csv`).
+- Test discipline: Home Credit guard log = 28 entries (1 whitelisted probe + exactly 1 per arm for all 27 arms; `report/guard_audit.json` one_entry_per_arm = true, no second access). Predictions written to artifacts/test_preds/ at the access; every metric/bootstrap/probe computed from those files. Taiwan guard log (artifacts/guard/taiwan_access.jsonl) = 8 entries (LEAK probe + 7 arms), one each.
+- Main test results (AUC-ROC / AUC-PR / worst-group ECE / EOD / DIR / recall): A0 .7439/.2189/.0151/.0668/.946/.317; A2 .7463/.2209/.3496/.0601/.951/.320; S1 .7463/.2209/.0131/.0601/.951/.320; S2-EG (v2) .7463/.2209/.0131/.0151/.989/.308; G1 .7445/.2209/.1925/.0239/.970/.320; JT chosen (0.05,2,0) .7433/.2145/.0198/.0363/.982/.314; JT tuned .7424/.2124/.0260/.0221/.989/.310; H1 .7414/.2109/.0258/.0274; REF (LightGBM) .7661/.2513/.0085/.0849/.942/.346; S2-GT (analysis only) EOD .0213; ThresholdOptimizer (analysis only) flags 34.7% (not rate-matched).
+- Paired test differences, JT chosen minus S2-EG: AUC-ROC -0.0029 (sig.), AUC-PR -0.0065 (sig.), worst-group ECE +0.0056 (sig.), EOD +0.0177 (CI 0.0008 to 0.0310, sig.). JT chosen does NOT beat or match the sequential baseline on any reported axis; vs S1 EOD diff -0.0238 (CI includes 0). REF vs A2: AUC-ROC +0.0198, AUC-PR +0.0304.
+- Validation vs test (`report/val_vs_test.csv`): the selected JT point was OPTIMISTIC on validation for fairness: EOD 0.0234 (val) -> 0.0363 (test), now close to the 0.04 limit; worst-group ECE 0.0189 -> 0.0198 (cap 0.02). S2-EG 0.0108 -> 0.0151, tuned JT 0.0121 -> 0.0221, H1 0.0069 -> 0.0274, H3 0.0059 -> 0.0330 (EOD is noisy and optimised-on-validation arms regress). AUC-PR and ECE transferred well (differences < 0.01 except REF +0.010).
+- Leakage after (fresh LightGBM probe on frozen z, same protocol as Phase 1 before; before = gender from features AUC 0.9003): A2 0.791 (sd .019), JT chosen 0.801 (sd .005), JT tuned 0.816; JT-A k3 0.768/0.768/0.773, JT-A k5 0.759 (la .25, .5) and 0.770 (la .1). Spec JT does NOT reduce leakage from z; multi-step GRL lowers it by about 0.03-0.04, but gender remains recoverable (AUC about 0.76).
+- SHAP-vector probe (seed 0, 4,000 train / 4,000-5,000 test rows): A2 0.801, JT chosen 0.811 (JT-A 0.77-0.80). New-proxy check: FLAG_OWN_CAR enters the JT (and all JT-A) top-15 mean|SHAP| and has single-feature gender AUC >= 0.60 -> flagged as a possible new proxy (A2's top 15 does not contain it).
+- Matched-pair (nearest other-gender applicant, 5,000 queries) mean |delta| / p95: A2 0.0297/0.106, JT chosen 0.0336/0.114, JT tuned 0.0340/0.113, H3 0.0036/0.009 (H3 is the only arm with a clear matched-pair gain, at AUC-PR 0.1715). JT does not reduce matched-pair deltas.
+- REF/GI retrain checks: `report/retrain_check.csv`.
+- UCI Taiwan (70/15/15, seed 42, A0 and A2 hp, JT chosen (0.05,2,0) with A2 hp, no re-tuning; SEX male=1 never in X; odd EDUCATION 5/6/0 (345 rows) and MARRIAGE 0 (54 rows) mapped to index 0): gender from features AUC 0.64-0.66 (test, 3 seeds). Test at the 10% flag rate: A0 AUC-PR .546, EOD .029; A2 .537, wECE .226, EOD .029; S1 wECE .030 (calibration repaired exactly as on Home Credit); S2-EG EOD .026 (not distinguishable from S1); JT chosen AUC-PR .488 (-0.05 vs A2), EOD .030, wECE .029; REF .559, EOD .014. Same at the train default rate in `taiwan/taiwan_results.csv`. Verdict: the Home Credit pattern holds directionally (S1 repairs calibration, the sequential pipeline matches the joint model on fairness and beats it on AUC-PR, LightGBM ahead of the TabTransformer); the fairness gap is small on Taiwan from the start (A0 EOD .029), so EOD differences are mostly within noise there.
+- Memory/engineering notes: analysis ran as one process per arm (peak process-tree RSS <= 1.96 GB), after two harness memory kills and a restart on free memory; Phase 6 predictions were scored with bf16 autocast on GPU (serving uses fp32 CPU; gap measured at the freeze).
+
+### SOFT FLAGS (Phase 6)
+1. JT chosen is not better than the sequential baseline (S1/S2-EG) on fairness, calibration or AUC; its validation EOD was optimistic (0.0234 -> 0.0363 on test).
+2. Spec-GRL JT does not lower gender leakage in z (0.801 vs A2 0.791); multi-step GRL lowers it only to about 0.76; gender still recoverable.
+3. FLAG_OWN_CAR flagged as a new proxy in the JT top-15 (single-feature gender AUC >= 0.60).
+4. Matched-pair deltas are not reduced by JT (mean 0.0336 vs A2 0.0297).
+5. Worst-group ECE of JT chosen is 0.0198 on test (cap 0.02) and 0.0238 on 5 validation seeds: at the limit.
+6. Mixed SHAP sample sizes: 17 arms used 4,000 test rows, the remaining ten used 5,000.
+7. Taiwan: JT chosen loses 0.05 AUC-PR with unchanged lambdas (no re-tuning by rule); EOD effects within noise.
+8. Another tool (Codex) edited the working tree without authorisation; edits reviewed, tested and kept (section A entry above); two memory kills; ThresholdOptimizer is not flag-rate matched (analysis only).
+
+## PHASE GATE: Phase 6, final verification + UCI Taiwan (overnight run)
+1. Phase 6 final verification. 2. Gate items: test set used once per arm, 27 Home Credit entries + 1 whitelisted probe in the guard log (PASS); bootstrap CIs on all arms, 1,000 paired resamples (PASS); leakage 'after' probe with Phase 1 protocol for A2, JT chosen, JT tuned and the six JT-A variants (PASS; result: not reduced by JT); SHAP-vector probe and new-proxy check (PASS; FLAG_OWN_CAR flagged); matched-pair delta distribution mean and p95 (PASS); UCI Taiwan retrain with identical hyper-parameters and lambdas, one guarded access per arm (PASS); every table marks deployable vs analysis-only (PASS); Pareto figure of deployable arms (PASS, report/pareto_deployable.png); notebook 06 executed with 0 errors (PASS). 3. pytest: 124 passed, 26 skipped (API tests wait for the bundle). 4. Key numbers: see Phase 6 RESULTS entry. 5. Soft flags: listed at the top of this file. 6. Artifacts: artifacts/runs/20261101T104908Z_phase6/{test,report,taiwan,jta_summary.csv}, artifacts/test_preds*, notebooks/06_final_verification_and_taiwan.ipynb. 7. Time: Phase 6 analysis about 3.5 h of compute across restarts. 8. Commit: see git log (phase6: final verification).
