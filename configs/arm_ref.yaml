@@ -1,0 +1,9 @@
+arm:
+  name: ref
+  type: lightgbm
+  model: lightgbm
+  loss: wce
+  sampling: none
+  include_gender: false
+  tuned: false
+  description: "LightGBM reference ceiling, scale_pos_weight"

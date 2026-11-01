@@ -1,0 +1,51 @@
+# Shared trainer settings (specs/09). Arm files (arm_*.yaml) only choose model/loss/sampling.
+base_config: configs/data.yaml
+training:
+  batch_size: 2048
+  max_epochs: 30
+  patience: 4              # early stopping on val AUC-PR
+  lr: 1.0e-3
+  weight_decay: 1.0e-4
+  grad_clip: 1.0
+  bf16: true
+  seeds: [0, 1, 2]
+  prob_clip: 1.0e-6
+model_defaults:
+  tabtransformer: {emb_dim: 32, heads: 4, layers: 3, attn_dropout: 0.1, ffn_mult: 2, mlp: [128, 64], dropout: 0.1}
+  cnn1d: {emb_dim: 8, channels: [32, 64], kernel: 3, mlp: [64], dropout: 0.1}
+  mlp: {emb_dim: 8, hidden: [256, 128, 64], dropout: 0.1}
+optuna:
+  trials: 10
+  epochs: 8
+  subsample: 0.3
+  sampler_seed: 42
+  train_seed: 0
+  space:
+    lr: {low: 3.0e-4, high: 3.0e-3, log: true}
+    weight_decay: {low: 1.0e-6, high: 1.0e-3, log: true}
+    dropout: {low: 0.0, high: 0.3}
+    emb_dim: [16, 32, 64]          # transformer arms only
+    focal_gamma: {low: 1.0, high: 3.0}   # A5 only
+smote:
+  sampling_ratio: 0.5
+  k_neighbors: 5
+group_calibration:      # G1 only
+  lambda_c: 1.0
+  bins: 10
+  sigma: 0.05
+evaluation:
+  flag_rate: 0.10
+  ece_bins: 15
+  bootstrap: {n: 1000, seed: 0}
+reference:              # REF: LightGBM, reference ceiling only (not an arm)
+  lightgbm:
+    n_estimators: 2000
+    learning_rate: 0.05
+    num_leaves: 63
+    min_child_samples: 50
+    subsample: 0.8
+    subsample_freq: 1
+    colsample_bytree: 0.8
+    early_stopping_rounds: 50
+runs_dir: artifacts/runs
+mlflow_experiment: phase2_baselines

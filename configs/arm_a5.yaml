@@ -1,0 +1,9 @@
+arm:
+  name: a5
+  type: train
+  model: tabtransformer
+  loss: focal
+  sampling: none
+  include_gender: false
+  tuned: true
+  description: "TabTransformer, focal loss"

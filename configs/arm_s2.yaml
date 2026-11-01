@@ -1,0 +1,9 @@
+arm:
+  name: s2
+  type: posthoc_groupthr
+  model: tabtransformer
+  loss: wce
+  sampling: none
+  include_gender: false
+  tuned: false
+  description: "S1 + group thresholds at the shared flag rate (needs gender at inference)"

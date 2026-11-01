@@ -71,3 +71,19 @@ def mlflow_tracking_uri(cfg: dict[str, Any]) -> str:
     db = resolve(uri[len(prefix) :])
     db.parent.mkdir(parents=True, exist_ok=True)
     return prefix + db.as_posix()
+
+
+def mlflow_experiment(cfg: dict[str, Any], name: str) -> str:
+    """Point MLflow at the SQLite store and return the experiment id (created if needed)."""
+    import mlflow
+    from mlflow.tracking import MlflowClient
+
+    mlflow.set_tracking_uri(mlflow_tracking_uri(cfg))
+    root = resolve(cfg["mlflow"]["artifact_root"])
+    root.mkdir(parents=True, exist_ok=True)
+    exp = MlflowClient().get_experiment_by_name(name)
+    return (
+        exp.experiment_id
+        if exp
+        else MlflowClient().create_experiment(name, artifact_location=root.as_uri())
+    )

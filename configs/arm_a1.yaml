@@ -1,0 +1,9 @@
+arm:
+  name: a1
+  type: train
+  model: tabtransformer
+  loss: ce
+  sampling: smote_nc
+  include_gender: false
+  tuned: true
+  description: "TabTransformer, SMOTE-NC (train only), CE"

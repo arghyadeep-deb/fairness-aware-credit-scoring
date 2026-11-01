@@ -1,0 +1,9 @@
+arm:
+  name: s1
+  type: posthoc_prior
+  model: tabtransformer
+  loss: wce
+  sampling: none
+  include_gender: false
+  tuned: false
+  description: "A2 + analytic prior correction"

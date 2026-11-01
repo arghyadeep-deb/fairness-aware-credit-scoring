@@ -1,0 +1,9 @@
+arm:
+  name: gi
+  type: train
+  model: tabtransformer
+  loss: wce
+  sampling: none
+  include_gender: true
+  tuned: false
+  description: "GI: best arm retrained with gender INCLUDED (reference, never deployed)"

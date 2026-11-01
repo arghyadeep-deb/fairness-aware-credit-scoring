@@ -1,0 +1,9 @@
+arm:
+  name: a2
+  type: train
+  model: tabtransformer
+  loss: wce
+  sampling: none
+  include_gender: false
+  tuned: true
+  description: "TabTransformer, weighted CE"

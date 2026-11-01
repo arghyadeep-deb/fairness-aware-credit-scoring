@@ -1,0 +1,9 @@
+arm:
+  name: a4
+  type: train
+  model: mlp
+  loss: wce
+  sampling: none
+  include_gender: false
+  tuned: true
+  description: "MLP, weighted CE"

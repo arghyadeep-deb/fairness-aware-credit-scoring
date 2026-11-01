@@ -1,0 +1,9 @@
+arm:
+  name: g1
+  type: train
+  model: tabtransformer
+  loss: wce_gcal
+  sampling: none
+  include_gender: false
+  tuned: true
+  description: "TabTransformer, weighted CE + group-wise soft-ECE loss"

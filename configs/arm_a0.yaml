@@ -1,0 +1,9 @@
+arm:
+  name: a0
+  type: train
+  model: tabtransformer
+  loss: ce
+  sampling: none
+  include_gender: false
+  tuned: true
+  description: "TabTransformer, plain CE"

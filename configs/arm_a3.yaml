@@ -1,0 +1,9 @@
+arm:
+  name: a3
+  type: train
+  model: cnn1d
+  loss: wce
+  sampling: none
+  include_gender: false
+  tuned: true
+  description: "1D CNN, weighted CE"
