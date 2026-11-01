@@ -87,7 +87,7 @@ def create_app(bundle_dir: str | Path | None = None) -> FastAPI:
             for e in exc.errors()
         ]
         if any(e["type"] == "json_invalid" for e in exc.errors()) or any(
-            d["field"].endswith("gender") for d in det
+            (request.url.path == "/matched-pair" and d["field"] == "gender") for d in det
         ):
             return error(400, "BAD_REQUEST", "Malformed JSON or invalid gender value.", det)
         return error(422, "VALIDATION_ERROR", "Invalid request fields.", det)
