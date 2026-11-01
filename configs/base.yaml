@@ -1,0 +1,18 @@
+# Project-wide settings. Every stage reads this via src.utils.load_config.
+seed: 42
+paths:
+  raw_csv: data/raw/application_train.csv
+  uci_xls: data/raw/uci_taiwan/default of credit card clients.xls
+  processed: data/processed
+  prep_artifacts: artifacts/prep
+  leakage_artifacts: artifacts/leakage
+  smoke_root: artifacts/smoke
+  guard_log: artifacts/guard/test_access.jsonl
+mlflow:
+  # MLflow 3.x disables the file: backend; SQLite per specs/09. Never set MLFLOW_ALLOW_FILE_STORE.
+  tracking_uri: sqlite:///artifacts/mlflow.db
+  artifact_root: artifacts/mlflow_artifacts
+evaluation:
+  flag_rate: 0.10
+env:
+  min_torch: "2.7"
