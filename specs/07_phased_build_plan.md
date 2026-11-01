@@ -59,7 +59,7 @@ If any gate item fails: do not advance; fix, or stop and report (hard stop rules
 
 ## Hard stops (stop and report to the user; do not continue past these)
 - Any rule in docs/CRITICAL_RULES.md would have to be broken to proceed.
-- The test set was accessed before Phase 6 (guard log not empty).
+- The test set was accessed before Phase 6 for anything other than the whitelisted `leakage_probe_gender_only` entry (with_target=false) already logged in Phase 1.
 - configs/selection_rule.yaml was not committed before the first sweep run.
 - NaN loss that persists after clip + grad-clip + LR halved once.
 - CUDA unavailable (unless the user passed --allow-cpu).

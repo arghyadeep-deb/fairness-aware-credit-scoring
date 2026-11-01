@@ -60,3 +60,9 @@ MLflow 3.17 disables the plain `file:` tracking backend by default. Decision: us
 - Open the UI with: `.\.venv\Scripts\mlflow.exe ui --backend-store-uri sqlite:///artifacts/mlflow.db`
 - Phase 1 environment check must log one tiny run to this URI and read it back (PASS/FAIL).
 - Never log gender values, raw rows or the datasets to MLflow; only params, metrics and small artifacts (plots, JSON).
+
+## Decisions made during Phase 1 (accepted by the owner)
+- Numeric outlier clipping at quantiles [0.001, 0.999], fitted on train only (configs/data.yaml `clip_quantiles`). Keep for all arms and both datasets.
+- Python 3.13 is the project interpreter (docs saying 3.11 are superseded).
+- Phase 1 baseline leakage: gender-from-X AUC 0.90 (LightGBM, test). Top proxies: OCCUPATION_TYPE, ORGANIZATION_TYPE, FLAG_OWN_CAR, EXT_SOURCE_1, AGE_YEARS. Default rate women 7.00%, men 10.14%.
+

@@ -40,7 +40,7 @@ Stages map to phases in specs/07_phased_build_plan.md (Phase 1 = Stages 0-2, Pha
 ## Stage 5: Lambda sweep
 - [ ] Coarse grid then refine; full metric battery per point on VALIDATION, 3 seeds.
 - [ ] Pareto frontier plotted; frontier shows a real trade-off (not flat).
-- [ ] No test data touched (guard log empty).
+- [ ] No test data touched for modelling or tuning. The guard log may contain only the whitelisted entry `leakage_probe_gender_only` (Phase 1, with_target=false); any other entry is a failure.
 
 ## Stage 6: Operating point
 - [ ] configs/selection_rule.yaml committed (git hash earlier than sweep results).
