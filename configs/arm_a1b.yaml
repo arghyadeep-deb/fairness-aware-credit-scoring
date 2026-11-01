@@ -1,0 +1,10 @@
+arm:
+  name: a1b
+  type: train
+  model: tabtransformer
+  loss: ce
+  sampling: smote_nc
+  smote_ratio: 1.0
+  include_gender: false
+  tuned: true
+  description: "A1b: SMOTE-NC at ratio 1.0 (prior shift ~11.4x, matched to class weights), CE"

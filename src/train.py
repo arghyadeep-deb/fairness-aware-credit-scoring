@@ -80,7 +80,12 @@ def fit(
     max_epochs = max_epochs or tc["max_epochs"]
     seed_everything(seed)
     if arm["sampling"] == "smote_nc":
-        train = smote_nc(train, cfg["smote"]["sampling_ratio"], cfg["smote"]["k_neighbors"], seed)
+        train = smote_nc(
+            train,
+            arm.get("smote_ratio", cfg["smote"]["sampling_ratio"]),
+            cfg["smote"]["k_neighbors"],
+            seed,
+        )
     prior_pos = float(np.mean(train.y))
     model = build_model(arm["model"], train.cont.shape[1], cardinalities, cfg["model_defaults"], hp)
     model.to(device)
@@ -182,7 +187,10 @@ def tune(
 
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     study = optuna.create_study(
-        direction="maximize", sampler=optuna.samplers.TPESampler(seed=oc["sampler_seed"])
+        direction="maximize",
+        sampler=optuna.samplers.TPESampler(
+            seed=oc["sampler_seed"], n_startup_trials=oc["n_startup_trials"]
+        ),
     )
     study.optimize(objective, n_trials=trials)
     return {

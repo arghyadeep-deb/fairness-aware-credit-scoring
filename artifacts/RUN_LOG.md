@@ -1,7 +1,7 @@
 # RUN_LOG
 
 Soft flags (top of file, newest first): none raised so far.
-Open gate item: Phase 2 Stage 3 "A1 calibrates worse than A2" FAILED (A1 ECE 0.152 < A2 ECE 0.342). Reported, not weakened. Needs the owner's decision.
+Recorded gate result (accepted by owner, unchanged): Phase 2 Stage 3 "A1 calibrates worse than A2" FAILED (first run A1 ECE 0.152 < A2 0.342; re-run 0.139 < 0.333). A1 at ratio 0.5 shifts the prior ~5.7x vs ~11.4x for class weights, so it is not a like-for-like comparison. A1b (ratio 1.0) ECE 0.237 is also below A2.
 
 ## Phase 0: setup check (2026-11-01) PASS
 - Installed in .venv: jupyterlab, ipykernel, nbformat, nbconvert, nbclient (already listed in requirements.txt). Kernel `fairness-credit` registered.
@@ -63,3 +63,35 @@ Decisions and notes:
 - Compute: first real TabTransformer epoch 1.1 s (MLP 0.3 s, CNN 0.7 s, SMOTE-NC 22 s). Tuning 4 min, final training 7 min, evaluation 1 min (about 13 min total, far under the 10 h cap; no reductions).
 - Files: artifacts/runs/20261101T052529Z_phase2/{a0..g1,s1,s2,s2_fairlearn,ref,gi}/, results.csv, results_per_seed.json; MLflow experiment phase2_baselines (SQLite).
 - Next: Phase 3 (GRL, soft fairness loss, adversarial head, joint loss + unit tests). Short compute, mostly unit tests.
+
+## Phase 2 review (2026-11-01): decisions and re-run
+Owner decisions applied; commits f8189b2 (selection rule) and the Phase 3 commit below. New run folder: artifacts/runs/20261101T055729Z_phase2 (the first run 20261101T052529Z_phase2 is kept untouched).
+1. A1 accepted as is. A1b added (SMOTE-NC ratio 1.0, same tuning budget, 3 seeds). ECE: A1 0.139, A1b 0.237, A2 0.333 (S1 0.006, A0 0.007). AUC-ROC: A1 0.686, A1b 0.668, A2 0.746.
+2. REF investigated. Root cause was NOT the tuning budget or subsampling (the first REF already used the full train set): LightGBM also tracked the default logloss, which worsens immediately under scale_pos_weight, so early stopping kept boosting round 1 (best_iteration = 1). Fixed: metric auc only, first_metric_only early stopping with patience 200, lr 0.02, 31 leaves, no scale_pos_weight (config picked from 4 settings tried on validation: 0.758 to 0.765). New REF: AUC-ROC 0.7646 [0.757, 0.773], AUC-PR 0.241, 1,222 rounds, ECE 0.004. This replaces the REF row.
+   Result now resolved, stated honestly: on validation LightGBM is ahead of the TabTransformer (A2 AUC-ROC 0.746, AUC-PR 0.221), +0.019 AUC-ROC with non-overlapping CIs; the MLP (A4 0.747) is no better than the transformer. REF EOD 0.097 is the largest of the unmitigated arms.
+   Side note: the Phase 1 gender probe uses the same LightGBM early-stopping pattern (auc plus default logloss). It kept 610 rounds and reached AUC 0.900, so it was not stopped at round 1; if logloss stopped it early, the true leakage AUC can only be higher. Not changed (Phase 1 numbers stand).
+3. Selection rule committed in f8189b2 (configs/selection_rule.yaml, specs/06, 07, 09 updated) before any sweep exists: EOD <= 0.04, AUC-ROC >= A2 - 0.02, worst-group ECE <= max(1.5 x S1, 0.02), max AUC-PR, DIR >= 0.80 safety only. Notes for Phase 5: in the re-run A2 EOD is 0.076 (0.086 in the first run), so 0.04 is 0.52x the baseline, not below half; and S1 worst-group ECE is 0.0123, so 1.5x = 0.0185 and the 0.02 floor is the binding bound. The file is not edited (rule 9).
+4. S2 split. S2-GT (group thresholds): analysis only, uses gender, not deployable, validation-optimistic: EOD 0.005, DIR 0.987. S2-EG (fairlearn ExponentiatedGradient, equalized odds, base = logistic regression on frozen A2 representation z, fit on TRAIN, no gender at inference): EOD 0.033 [0.017, 0.059], DIR 0.973, recall 0.316; meets EOD <= 0.04. First attempt (base classifier flagged ~35%, class_weight balanced) collapsed to S1 under the shared rule (EOD 0.073): kept in s2_eg_v1_unmatched/ and results_v1_s2eg_unmatched.csv. Final version picks the positive class weight on train so the base classifier flags ~10% (weight ~4.3). S2-EG AUC/ECE columns are S1's (only the flags change); 1e-6 x S1 probability breaks ties in the mixture score. fairlearn ThresholdOptimizer kept as S2_fairlearn (own operating point, ~34% flagged, not rate-matched).
+5. Optuna n_startup_trials = 4 (TPE for trials 5 to 10, seed 42). Tuning for all 8 tuned arms took 5.6 min (< 15 min limit), so all arms were re-tuned and re-trained in the new run. Hyperparameters changed (e.g. A2: lr 0.0026, dropout 0.25), A0/A2 AUC-ROC 0.744/0.746 (first run 0.746/0.746). Arms no longer all share one configuration.
+6. notebooks/02_baselines.ipynb rebuilt for the new run (A1b, S2-GT, S2-EG, new REF and a first-vs-second REF table), executed, 10 code cells, 0 errors.
+Re-run gate status: all Stage 3 items as before; "A1 worse than A2" still FAILED (recorded above). Key numbers (AUC-ROC / AUC-PR / ECE / DIR / EOD): A0 .744/.220/.007/.940/.083; A2 .746/.221/.333/.946/.076; S1 .746/.221/.006/.946/.076; S2-GT .746/.221/.006/.987/.005; S2-EG .746/.221/.006/.973/.033; G1 .744/.219/.187/.966/.045; REF .765/.241/.004/.935/.097; GI .749/.223/.345/.906/.165.
+Compute: re-run about 20 min wall (tuning 5.6 min). Guard log unchanged (1 whitelisted entry).
+
+## Phase 3: joint loss building blocks (2026-11-01) PASS (Stage 4 unit tests)
+Gate (specs/06 Stage 4, unit-test part; the 3-epoch gender-head smoke run belongs to Phase 4 per specs/07):
+- GRL forward identity, backward x (-lambda): PASS
+- Fairness loss ~0 when both groups get identical predictions: PASS (exactly 0 for constant scores; <0.03 for group-independent scores; soft dp matches hard flag-rate gap within 0.003)
+- Calibration loss ~0 on perfectly calibrated data: PASS (0.002; matches hard ECE 0.046 to 0.32 for logit shifts 0.25 to 2)
+- All lambdas = 0: joint loss and gradients equal the A2 loss on a fixed batch, at warm-up, mid-ramp and fully ramped: PASS (difference exactly 0.0)
+- Overfits a 200-row batch: PASS (joint loss 1.08 to 0.002 with fairness and calibration terms on, lambda_a = 0)
+- Adversary inactive during warm-up: PASS (terms not computed, head receives no gradient, trunk gradient equals A2's)
+- Not in Phase 3: gender-head AUC trending to 0.5 (Phase 4 smoke).
+pytest: 73 passed (21 in tests/test_joint.py, 6 in tests/test_phase2_review.py). Notebook: notebooks/03_joint_model.ipynb executed, 10 code cells, 0 errors.
+Design decisions:
+- Joint loss = wCE + lambda_f*L_fair + lambda_c*L_cal + lambda_a*L_adv with the lambda on the loss value. The adversary head applies a GRL with coefficient 1 (pure reversal) so that lambda_a = 0 gives exactly the A2 loss and no influence on the trunk; trunk gradient from the adversary is -lambda_a x the plain-head gradient. Terms with effective lambda 0 are not computed.
+- Soft flags: sigmoid((logit - batch quantile) / (T x batch std)), T = 0.1, quantile at 1 - flag_rate (0.10), threshold and std detached. The std scaling makes T scale-free (weighted CE inflates logits). eo = |soft TPR gap| + |soft FPR gap| (sum, slightly stricter than the reported max-based EOD); dp = |soft flag-rate gap|. A missing group or cell contributes 0 with a warning.
+- Schedule: 3 warm-up epochs with all lambdas 0, then linear ramp to targets over 5 epochs (epoch may be fractional). Config: configs/train.yaml `joint:`.
+- Not yet normalised by initial term magnitude (Phase 4 stabilisation, specs/09).
+- Files: src/losses/{grl,fairness,joint}.py, src/models/heads.py, tests/test_joint.py, notebooks/03_joint_model.ipynb.
+- Compute: unit tests plus demos only (seconds). Total project compute so far about 0.6 h of the 10 h cap.
+- Next: Phase 4 (stabilise: stratified batch sampler, warm-up/ramp in the trainer, adversary stability, AUC floor, short joint runs on validation, gender-head AUC smoke).

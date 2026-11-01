@@ -1,0 +1,9 @@
+arm:
+  name: s2_eg
+  type: posthoc_eg
+  model: tabtransformer
+  loss: wce
+  sampling: none
+  include_gender: false
+  tuned: false
+  description: "S2-EG: S1 + fairlearn ExponentiatedGradient (equalized odds) on the frozen A2 representation z. No gender at inference, deployable sequential baseline"

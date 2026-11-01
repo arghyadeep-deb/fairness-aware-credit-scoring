@@ -49,16 +49,26 @@ nb.cells = [
         "main = pd.DataFrame({v: fmt(None, k) for k, v in cols.items()})\n"
         "main.insert(0, 'arm', res['arm'])\nmain"
     ),
+    md("## REF (LightGBM): what changed since the first Phase 2 run"),
+    code(
+        "old = sorted(p for p in resolve(cfg['runs_dir']).glob('*_phase2') if (p / 'results.csv').exists())[0]\n"
+        "o = pd.read_csv(old / 'results.csv').set_index('key').loc['ref']\n"
+        "it_old = json.loads((old / 'ref' / 'seed_0' / 'pred_meta.json').read_text())['best_iteration']\n"
+        "it_new = json.loads((RUN / 'ref' / 'seed_0' / 'pred_meta.json').read_text())['best_iteration']\n"
+        "n = res.loc['ref']\n"
+        "pd.DataFrame({'first run': [o['auc_roc'], o['auc_pr'], it_old], 'this run': [n['auc_roc'], n['auc_pr'], it_new]},\n"
+        "             index=['AUC-ROC', 'AUC-PR', 'boosting rounds kept']).round(4)"
+    ),
     md("## Imbalance damages calibration; prior correction repairs it"),
     code(
-        "keys = ['a0', 'a1', 'a2', 's1']\n"
+        "keys = ['a0', 'a1', 'a1b', 'a2', 's1']\n"
         "cal = res.loc[keys, ['ece', 'worst_group_ece', 'cal_slope', 'cal_intercept', 'brier',\n"
         "                      'recall_at_0.5', 'flag_rate_at_0.5']].round(4)\n"
         "cal.columns = ['ECE', 'worst-group ECE', 'cal slope', 'cal intercept', 'Brier',\n"
         "               'recall at p>0.5 (diagnostic)', 'flag rate at p>0.5 (diagnostic)']\ncal"
     ),
     code(
-        "order = [k for k in ['a0','a1','a2','a3','a4','a5','s1','g1','ref'] if k in res.index]\n"
+        "order = [k for k in ['a0','a1','a1b','a2','a3','a4','a5','s1','g1','ref'] if k in res.index]\n"
         "fig, ax = plt.subplots(figsize=(8, 3.5))\n"
         "y = res.loc[order, 'ece']\n"
         "err = [(y - res.loc[order, 'ece_lo']).clip(lower=0), (res.loc[order, 'ece_hi'] - y).clip(lower=0)]\n"
@@ -79,12 +89,12 @@ nb.cells = [
     ),
     md("## Does the imbalance fix change group-wise calibration? (A0 per gender)"),
     code(
-        "g = res.loc[['a0', 'a1', 'a2', 's1', 'ref'], ['ece_f', 'ece_m', 'tpr_f', 'tpr_m', 'fpr_f', 'fpr_m']].round(4)\n"
+        "g = res.loc[['a0', 'a1', 'a1b', 'a2', 's1', 'ref'], ['ece_f', 'ece_m', 'tpr_f', 'tpr_m', 'fpr_f', 'fpr_m']].round(4)\n"
         "g.columns = ['ECE female', 'ECE male', 'TPR female', 'TPR male', 'FPR female', 'FPR male']\ng"
     ),
     md("## Fairness at the shared threshold"),
     code(
-        "fo = [k for k in ['a0','a1','a2','a3','a4','a5','s1','s2','g1','gi'] if k in res.index]\n"
+        "fo = [k for k in ['a0','a1','a1b','a2','a3','a4','a5','s1','s2_gt','s2_eg','g1','gi'] if k in res.index]\n"
         "fig, ax = plt.subplots(1, 2, figsize=(11, 3.6))\n"
         "ax[0].bar(fo, res.loc[fo, 'dir'], color='#3b6ea5'); ax[0].axhline(0.8, color='r', ls='--', lw=1)\n"
         "ax[0].set_title('Disparate impact ratio (>= 0.8 target)'); ax[0].set_ylim(0.6, 1.02)\n"
@@ -103,7 +113,7 @@ nb.cells = [
     md("## Tuning and training cost"),
     code(
         "rows = []\n"
-        "for k in ['a0','a1','a2','a3','a4','a5','g1']:\n"
+        "for k in ['a0','a1','a1b','a2','a3','a4','a5','g1']:\n"
         "    t = json.loads((RUN / k / 'tuning.json').read_text())\n"
         "    s = json.loads((RUN / k / 'summary.json').read_text())['seeds']\n"
         "    rows.append({'arm': k, 'best tuning AUC-PR': round(t['best_value'], 4),\n"

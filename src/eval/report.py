@@ -21,8 +21,26 @@ from src.eval.metrics import METRIC_NAMES, compute_metrics
 from src.utils import load_config
 
 log = logging.getLogger(__name__)
-ORDER = ["a0", "a1", "a2", "a3", "a4", "a5", "s1", "s2", "s2_fairlearn", "g1", "ref", "gi"]
+ORDER = [
+    "a0",
+    "a1",
+    "a1b",
+    "a2",
+    "a3",
+    "a4",
+    "a5",
+    "s1",
+    "s2_gt",
+    "s2_eg",
+    "s2_fairlearn",
+    "g1",
+    "ref",
+    "gi",
+]
 LABEL = {
+    "s2_gt": "S2-GT (analysis only: uses gender, not deployable, val-optimistic)",
+    "s2_eg": "S2-EG (fairlearn ExponentiatedGradient, deployable)",
+    "a1b": "A1b (SMOTE-NC ratio 1.0)",
     "gi": "GI (gender included, NOT deployable)",
     "ref": "REF (LightGBM)",
     "s2_fairlearn": "S2 fairlearn native (not rate-matched)",

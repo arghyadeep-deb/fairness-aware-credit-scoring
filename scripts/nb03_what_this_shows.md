@@ -1,0 +1,9 @@
+## What this shows
+
+- **GRL** is an exact identity in the forward pass, and its backward pass multiplies the gradient by -lambda (error 0.0 for lambda = 0, 0.5, 1, 2). The adversary head applies the GRL with coefficient 1 and the strength lambda_a sits on the loss term, so with lambda_a = 0 the head cannot affect the trunk.
+- **Warm-up and ramp.** All effective lambdas are 0 for the first 3 epochs, then rise linearly and reach their targets at epoch 8. During warm-up only the weighted-CE term is computed: the adversary head receives no gradient (|grad| = 0), while after the ramp it does.
+- **Soft fairness loss** follows the hard metrics closely on synthetic data: the soft demographic-parity term matches the hard flag-rate gap to within 0.005 (for example 0.1485 vs 0.1468 at a group shift of 1.5), and the soft equalized-odds term (sum of the TPR and FPR gaps) matches the hard sum of gaps within about 0.01. It is about 0 when both groups are scored alike. Note that the reported hard EOD is the larger of the two gaps, while the soft term is their sum, so the surrogate is slightly stricter.
+- **Soft group ECE** reproduces the hard ECE almost exactly (0.0459, 0.0909, 0.1767, 0.3195 for logit shifts 0.25 to 2) and is about 0.002 on perfectly calibrated data.
+- **Lambda = 0 equals A2.** On a real validation batch with the real class weights the joint loss and the A2 loss are identical (difference exactly 0.0), at warm-up, mid-ramp and after the ramp; gradients are identical too (unit test).
+- **A 200-row batch is memorised** (joint loss 1.08 to 0.002 with the fairness and calibration terms on).
+- **Not tested yet (Phase 4):** the gender-head AUC trending toward 0.5 in a short joint run, adversary stability, and the stratified batch sampler. Nothing here shows that the joint objective improves the trade-off; that is what the Phase 5 sweep measures.

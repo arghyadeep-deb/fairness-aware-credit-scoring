@@ -1,0 +1,9 @@
+arm:
+  name: s2_gt
+  type: posthoc_groupthr
+  model: tabtransformer
+  loss: wce
+  sampling: none
+  include_gender: false
+  tuned: false
+  description: "S2-GT: S1 + group thresholds at the shared flag rate. ANALYSIS ONLY: uses gender at inference, not deployable, validation-optimistic"

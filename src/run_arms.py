@@ -32,7 +32,7 @@ from src.train import fit, tune
 from src.utils import git_hash, load_config, mlflow_experiment, resolve
 
 log = logging.getLogger(__name__)
-NEURAL = ["a0", "a1", "a2", "a3", "a4", "a5", "g1"]
+NEURAL = ["a0", "a1", "a1b", "a2", "a3", "a4", "a5", "g1"]
 
 
 def sigmoid(x: np.ndarray) -> np.ndarray:
@@ -159,16 +159,19 @@ def run_s1(cfg, run_dir, val, weights, seeds, exp_id) -> None:
         save_predictions(d, prob, flags, {"threshold": thr, "source": "a2"})
 
 
-def run_s2(cfg, run_dir, val, seeds) -> None:
+def run_s2_gt(cfg, run_dir, val, seeds) -> None:
+    """S2-GT (analysis only, uses gender at inference) plus fairlearn ThresholdOptimizer row."""
     fr = cfg["evaluation"]["flag_rate"]
     for s in seeds:
-        d = run_dir / "s2" / f"seed_{s}"
+        d = run_dir / "s2_gt" / f"seed_{s}"
         if (d / "val_prob.npy").exists():
             continue
         prob = np.load(run_dir / "s1" / f"seed_{s}" / "val_prob.npy")
         thr = fit_group_thresholds(val.y, prob, val.a, fr)
         flags = apply_group_thresholds(prob, val.a, thr)
-        save_predictions(d, prob, flags, {**thr, "source": "s1", "fit_on": "validation"})
+        save_predictions(
+            d, prob, flags, {**thr, "source": "s1", "fit_on": "validation", "deployable": False}
+        )
         d2 = run_dir / "s2_fairlearn" / f"seed_{s}"
         fl = fairlearn_threshold_flags(val.y, prob, val.a, seed=s)
         save_predictions(
@@ -176,32 +179,113 @@ def run_s2(cfg, run_dir, val, seeds) -> None:
         )
 
 
+@torch.no_grad()
+def extract_z(model, arr, device, batch: int = 8192) -> np.ndarray:
+    """Representation z (N, z_dim) from the frozen model."""
+    model.eval()
+    xc, xk = torch.from_numpy(arr.cont).to(device), torch.from_numpy(arr.cat).to(device)
+    return torch.cat(
+        [
+            model(xc[i : i + batch], xk[i : i + batch])[1].float().cpu()
+            for i in range(0, len(xc), batch)
+        ]
+    ).numpy()
+
+
+def match_flag_weight(z: np.ndarray, y: np.ndarray, target: float, max_iter: int) -> float:
+    """Positive-class weight for which a logistic model on z flags ~`target` of TRAIN rows at 0.5.
+
+    Makes EG's hard classifiers operate near the shared flag rate, so the mixture score is not
+    saturated at 1.0. Bisection on log-weight; uses train data only.
+    """
+    from sklearn.linear_model import LogisticRegression
+
+    lo, hi = 0.0, np.log(40.0)
+    for _ in range(9):
+        mid = (lo + hi) / 2
+        m = LogisticRegression(max_iter=max_iter, class_weight={0: 1.0, 1: float(np.exp(mid))})
+        rate = float(m.fit(z, y).predict(z).mean())
+        lo, hi = (mid, hi) if rate < target else (lo, mid)
+    return float(np.exp((lo + hi) / 2))
+
+
+def run_s2_eg(cfg, run_dir, train, val, cards, seeds, device) -> None:
+    """S2-EG: fairlearn ExponentiatedGradient on frozen A2 z (no gender at inference).
+
+    Reported probability is the S1 probability (calibrated); decisions use the EG mixture score
+    ranked by the shared 10% rule. 1e-6 * S1 prob only breaks ties between mixture weights.
+    """
+    from fairlearn.reductions import EqualizedOdds, ExponentiatedGradient
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import roc_auc_score
+    from sklearn.preprocessing import StandardScaler
+
+    from src.models.nets import build_model
+
+    ec = cfg["exponentiated_gradient"]
+    hp = json.loads((run_dir / "a2" / "tuning.json").read_text())["best_params"]
+    for s in seeds:
+        d = run_dir / "s2_eg" / f"seed_{s}"
+        if (d / "val_prob.npy").exists():
+            continue
+        t0 = time.time()
+        model = build_model("tabtransformer", train.cont.shape[1], cards, cfg["model_defaults"], hp)
+        model.load_state_dict(torch.load(run_dir / "a2" / f"seed_{s}" / "best.pt"))
+        model.to(device)
+        ztr, zva = extract_z(model, train, device), extract_z(model, val, device)
+        sc = StandardScaler().fit(ztr)  # fairlearn passes sample_weight, so no Pipeline
+        ztr, zva = sc.transform(ztr), sc.transform(zva)
+        w_pos = match_flag_weight(
+            ztr, train.y, cfg["evaluation"]["flag_rate"], ec["logistic_max_iter"]
+        )
+        base = LogisticRegression(max_iter=ec["logistic_max_iter"], class_weight={0: 1.0, 1: w_pos})
+        eg = ExponentiatedGradient(
+            base, constraints=EqualizedOdds(), eps=ec["eps"], max_iter=ec["max_iter"]
+        )
+        eg.fit(ztr, train.y, sensitive_features=train.a)
+        pmf = eg._pmf_predict(zva)[:, 1]  # P(flag) of the randomized mixture, uses z only
+        s1_prob = np.load(run_dir / "s1" / f"seed_{s}" / "val_prob.npy")
+        score = pmf + 1e-6 * s1_prob
+        flags, thr = flags_from_shared_rule(score, cfg["evaluation"]["flag_rate"])
+        save_predictions(
+            d,
+            s1_prob,
+            flags,
+            {
+                "threshold": thr,
+                "source": "s1 + EG on frozen A2 z",
+                "deployable": True,
+                "eg_score_auc_roc": float(roc_auc_score(val.y, score)),
+                "eg_predictors": int(len(eg.predictors_)),
+                "base_class_weight_pos": w_pos,
+                "seconds": time.time() - t0,
+            },
+        )
+        log.info("s2_eg seed %d done (%.0fs)", s, time.time() - t0)
+
+
 def run_ref(cfg, run_dir, train, val, seeds) -> None:
+    """REF: LightGBM on the FULL train set; early stopping on val AUC only.
+
+    The Phase 2 REF stopped at iteration 1: LightGBM also tracks the default logloss, which
+    worsens immediately under scale_pos_weight. Here only `metric: auc` is tracked.
+    """
     p = dict(cfg["reference"]["lightgbm"])
     stop = p.pop("early_stopping_rounds")
-    n1 = train.y.sum()
+    X = np.concatenate([train.cont, train.cat], axis=1)
+    Xv = np.concatenate([val.cont, val.cat], axis=1)
+    cats = list(range(train.cont.shape[1], X.shape[1]))
     for s in seeds:
         d = run_dir / "ref" / f"seed_{s}"
         if (d / "val_prob.npy").exists():
             continue
-        X = np.concatenate([train.cont, train.cat], axis=1)
-        Xv = np.concatenate([val.cont, val.cat], axis=1)
-        cats = list(range(train.cont.shape[1], X.shape[1]))
-        m = lgb.LGBMClassifier(
-            **p,
-            objective="binary",
-            random_state=s,
-            n_jobs=-1,
-            verbose=-1,
-            scale_pos_weight=float((len(train.y) - n1) / n1),
-        )
+        m = lgb.LGBMClassifier(**p, objective="binary", random_state=s, n_jobs=-1, verbose=-1)
         m.fit(
             X,
             train.y,
             eval_set=[(Xv, val.y)],
-            eval_metric="average_precision",
             categorical_feature=cats,
-            callbacks=[lgb.early_stopping(stop, verbose=False)],
+            callbacks=[lgb.early_stopping(stop, first_metric_only=True, verbose=False)],
         )
         prob = m.predict_proba(Xv)[:, 1]
         flags, thr = flags_from_shared_rule(prob, cfg["evaluation"]["flag_rate"])
@@ -250,7 +334,7 @@ def measure(cfg, device) -> None:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--config", default="configs/train.yaml")
-    p.add_argument("--arms", nargs="+", default=NEURAL + ["s1", "s2", "ref", "gi"])
+    p.add_argument("--arms", nargs="+", default=NEURAL + ["s1", "s2_gt", "s2_eg", "ref", "gi"])
     p.add_argument("--seeds", nargs="+", type=int)
     p.add_argument("--smoke", action="store_true")
     p.add_argument("--measure", action="store_true")
@@ -273,8 +357,9 @@ def main() -> None:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_dir = Path(args.resume) if args.resume else runs_root / f"{stamp}_phase2"
     run_dir.mkdir(parents=True, exist_ok=True)
+    meta_name = f"run_meta_resume_{stamp}.json" if args.resume else "run_meta.json"
     save_json(
-        run_dir / "run_meta.json",
+        run_dir / meta_name,
         {
             "git_hash": git_hash(),
             "arms": args.arms,
@@ -306,8 +391,10 @@ def main() -> None:
         )
     if "s1" in args.arms:
         run_s1(cfg, run_dir, val, weights, seeds, exp_id)
-    if "s2" in args.arms:
-        run_s2(cfg, run_dir, val, seeds)
+    if "s2_gt" in args.arms:
+        run_s2_gt(cfg, run_dir, val, seeds)
+    if "s2_eg" in args.arms:
+        run_s2_eg(cfg, run_dir, train, val, cards, seeds, device)
     if "ref" in args.arms:
         run_ref(cfg, run_dir, train, val, seeds)
     if "gi" in args.arms:
