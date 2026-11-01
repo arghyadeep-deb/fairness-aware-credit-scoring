@@ -177,7 +177,7 @@ def test_joint_loss_is_weighted_sum_of_terms_after_ramp():
     xc, xk, y, a = toy()
     model = JointModel(build_model("mlp", 8, CARDS, CFG["model_defaults"], {}))
     lf, lc, la = 0.7, 1.3, 0.4
-    loss = jl(lf, lc, la)
+    loss = jl(lf, lc, la, normalize="none")
     loss.set_epoch(100)
     logit, _, adv = model(xc, xk)
     total, parts = loss(logit, y, a, adv)
@@ -279,7 +279,9 @@ def test_joint_loss_overfits_a_200_row_batch_to_near_zero():
     y[:12] = 1.0  # make sure there are positives in both groups
     a[:12] = torch.tensor([0, 1] * 6)
     model = JointModel(build_model("mlp", 8, CARDS, CFG["model_defaults"], {"dropout": 0.0}))
-    loss = jl(lf=1.0, lc=1.0, la=0.0, warmup_epochs=0, ramp_epochs=0)  # fairness + calibration on
+    loss = jl(
+        lf=1.0, lc=1.0, la=0.0, warmup_epochs=0, ramp_epochs=0, normalize="none"
+    )  # fair + cal on
     loss.set_epoch(0)
     opt = torch.optim.Adam(model.parameters(), lr=5e-3)
     first = None

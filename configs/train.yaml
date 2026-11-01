@@ -62,3 +62,11 @@ joint:                  # Phase 3: joint objective (specs/09). Lambdas are set p
   adversary_hidden: 32
   fairness: {type: eo, temperature: 0.1}   # temperature applies to the batch-standardised logit gap
   calibration: {bins: 10, sigma: 0.05}
+  normalize: initial       # Phase 4: divide each term by its warm-up magnitude (logged per run)
+  sampler: {min_per_cell: 64}   # stratified batches: >= 64 per TARGET x gender cell
+  auc_floor: 0.60          # sweep points below this val AUC-ROC are discarded from the frontier
+  smoke: {warmup_epochs: 1, ramp_epochs: 1, epochs: 3}   # compressed schedule for the 3-epoch smoke run only
+  hp_source: artifacts/runs/20261101T055729Z_phase2/a2/tuning.json   # A2 hyper-parameters, no re-tuning
+sweep:
+  grid: {lambda_f: [0.0, 0.5, 2.0], lambda_c: [0.0, 0.5, 2.0], lambda_a: [0.0, 0.5, 1.0]}
+  seeds: [0, 1, 2]

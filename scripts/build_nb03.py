@@ -118,7 +118,7 @@ nb.cells = [
         "xc2, xk2 = torch.from_numpy(val.cont[sub]), torch.from_numpy(val.cat[sub])\n"
         "y2, a2_ = torch.from_numpy(val.y[sub]).float(), torch.from_numpy(val.a[sub]).long()\n"
         "m2 = JointModel(build_model('mlp', xc2.shape[1], cards, cfg['model_defaults'], {'dropout': 0.0}))\n"
-        "jc7 = JointConfig.from_config(cfg, lambda_f=1.0, lambda_c=1.0, lambda_a=0.0); jc7.warmup_epochs = 0; jc7.ramp_epochs = 0\n"
+        "jc7 = JointConfig.from_config(cfg, lambda_f=1.0, lambda_c=1.0, lambda_a=0.0); jc7.warmup_epochs = 0; jc7.ramp_epochs = 0; jc7.normalize = 'none'\n"
         "jt = JointLoss(jc7, W['0'], W['1'])\n"
         "jt.set_epoch(0); opt = torch.optim.Adam(m2.parameters(), lr=5e-3); curve = []\n"
         "for _ in range(600):\n"

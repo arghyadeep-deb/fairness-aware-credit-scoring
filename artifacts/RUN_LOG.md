@@ -95,3 +95,20 @@ Design decisions:
 - Files: src/losses/{grl,fairness,joint}.py, src/models/heads.py, tests/test_joint.py, notebooks/03_joint_model.ipynb.
 - Compute: unit tests plus demos only (seconds). Total project compute so far about 0.6 h of the 10 h cap.
 - Next: Phase 4 (stabilise: stratified batch sampler, warm-up/ramp in the trainer, adversary stability, AUC floor, short joint runs on validation, gender-head AUC smoke).
+
+## Phase 4: joint training, stabilisation + smoke (2026-11-01) STOPPED AT SMOKE, NO SWEEP RUN
+Stop rule from the owner: if the default AUC collapses with the adversary at full strength, stop and report instead of sweeping. It triggered. The sweep, Pareto plot, selection rule, ablations, JT-vs-S2-EG comparison and notebook 04 were NOT done. configs/selection_rule.yaml is untouched and no sweep result exists.
+Built (all tested, 84 pytest passed): per-term normalisation by initial magnitude (mean over the last warm-up epoch, frozen when the ramp starts; configs joint.normalize: initial; lambda = 0 still equals A2 exactly); stratified batch sampler (>= 64 per TARGET x gender cell, natural mix kept: only the smallest cell is lifted, 1.7% to 3.1%); joint trainer src/train_joint.py (A2 hyper-parameters, no re-tuning, early stopping only once lambdas are at full strength, lr-halving retry on NaN, AUC-floor flag); runner src/run_joint.py (smoke / resumable sweep); diagnostics scripts/phase4_stability.py. Normalisation references seen: fair 0.137, cal 0.350, adv 0.691.
+Compute: about 6 min of GPU for all smoke and diagnostic runs (epoch about 1.3 s); project total about 0.7 h of 10 h.
+Smoke (3 epochs, compressed schedule 1 warm-up + 1 ramp, seed 0, validation), AUC-ROC / EOD / worst-group ECE / adversary-head AUC / gender-from-z probe AUC at the last epoch:
+- control (0,0,0), same as A2: 0.743 / 0.091 / 0.366 / 0.58 / 0.76
+- adversary only (0,0,1): 0.517 / 0.044 / 0.086 / 0.59 / 0.79  <- AUC collapse
+- full (2,2,1): 0.637 / 0.033 / 0.101 / 0.55 / 0.67
+Real 3+5 schedule, 14 epochs (artifacts/smoke/joint_stability/*.json):
+- adversary only, lambda_a 0.5: AUC-ROC 0.46 to 0.73, mostly 0.46 to 0.62 after the ramp; lambda_a 1.0: 0.46 to 0.54. Adversary-head AUC swings between 0.34 and 0.65. The adversary loss rises from 0.7 to 4.3 and 8.2 (confidently wrong), i.e. the trunk maximises an unbounded loss. The gender-from-z probe does not fall (0.67 to 0.81 against 0.75 at the start): gender is still recoverable, the head is only being fooled.
+- A competent head did not help (diagnostic, flag joint.adv_pretrain, default off, not adopted: Head B fitted on detached z during warm-up, head AUC 0.67 to 0.70 at ramp start): AUC still falls to 0.48 to 0.52 at once, adversary loss peaks at 16.
+- fairness only, lambda_f = 2 (normalised weight 2/0.137 = 14.6): AUC-ROC 0.53 to 0.66, EOD 0.006 to 0.04. Strong trade-off, EOD can be cut at a large AUC cost.
+- calibration only, lambda_c = 2: AUC-ROC 0.743 to 0.745 (unchanged), worst-group ECE 0.016 to 0.027 (A2 0.36, S1 0.012), EOD 0.02 to 0.05. The calibration term works without costing ranking quality.
+- fairness + calibration (2,2,0): AUC-ROC 0.58 to 0.68, EOD 0.006 to 0.04, worst-group ECE 0.02 to 0.10. Adding the adversary (2,2,1) changes this little (0.57 to 0.64): the AUC loss there comes from lambda_f, not the adversary.
+Gender-head AUC trend, as asked: it does not start near 0.9 (the head sees z; its starting AUC is 0.58, a gender probe on z gives 0.75, a probe on the raw features gave 0.90 in Phase 1). With the adversary on it goes to about 0.5 or BELOW 0.5 (down to 0.34), which is the head being inverted, not information removed (probe on z unchanged). So it neither stays high nor cleanly converges.
+Open decision for the owner (options in the Phase 4 report): (1) keep a GRL adversary but with a much smaller lambda_a grid; (2) a bounded adversarial objective (confusion loss) instead of unbounded reversal, which departs from the GRL in the spec; (3) run the sweep with lambda_a = 0 and report the unstable adversary as a negative result.
