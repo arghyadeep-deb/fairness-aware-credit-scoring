@@ -43,7 +43,8 @@ JTL, TUN = "JT chosen = JT-v1 (0.05,2,0)", "JT tuned (0.05,2,0)"
 
 def main() -> None:
     p2, p4, p4b = (Path(x) for x in sys.argv[1:4])
-    out = p4b / "phase5"
+    eg_dir = Path(sys.argv[4]) if len(sys.argv) > 4 else None  # corrected S2-EG (Phase 6 step 1)
+    out = p4b / (sys.argv[5] if len(sys.argv) > 5 else "phase5")
     out.mkdir(exist_ok=True)
     cfg = load_config("configs/train.yaml")
     fr, eb = cfg["evaluation"]["flag_rate"], cfg["evaluation"]["ece_bins"]
@@ -63,7 +64,7 @@ def main() -> None:
     arms = {  # label -> (dir, deployable)
         "A2": (p2 / "a2", True),
         "S1": (p2 / "s1", True),
-        "S2-EG": (p2 / "s2_eg", True),
+        "S2-EG": (eg_dir or p2 / "s2_eg", True),
         "S2-GT": (p2 / "s2_gt", False),
         "per-group Platt": (out / "platt", False),
         "per-group isotonic": (out / "isotonic", False),
@@ -128,7 +129,7 @@ def main() -> None:
     hp = json.loads((p2 / "a2" / "tuning.json").read_text())["best_params"]
     ec = cfg["exponentiated_gradient"]
     eg_curve = []
-    for s in S:
+    for s in S if eg_dir is None else []:
         model = build_model("tabtransformer", train.cont.shape[1], cards, cfg["model_defaults"], hp)
         model.load_state_dict(torch.load(p2 / "a2" / f"seed_{s}" / "best.pt"))
         model.to(device)
@@ -153,10 +154,19 @@ def main() -> None:
                 print(f"EG eps {eps} seed {s} ({time.time() - t0:.0f}s)", flush=True)
             m = metrics_row(val.y, s1p, val.a, np.load(d / "val_flags.npy"), eb)
             eg_curve.append({"eps": eps, "seed": s, **m})
-    egc = pd.DataFrame(eg_curve).groupby("eps").mean(numeric_only=True).reset_index()
-    egc["abs_gap"] = (egc.eod - target).abs()
+    if eg_dir is None:
+        egc = pd.DataFrame(eg_curve).groupby("eps").mean(numeric_only=True).reset_index()
+        egc["abs_gap"] = (egc.eod - target).abs()
+        eps_star = float(egc.loc[egc.abs_gap.idxmin(), "eps"])
+    else:  # corrected EG: eps curve comes from the step-1 diagnosis (fixed version, shared 10% rule)
+        dg = pd.read_csv(eg_dir.parent / "eg_diagnosis.csv")
+        dg = dg[dg.version.str.startswith("fixed")]
+        egc = dg.groupby("eps").mean(numeric_only=True).reset_index()
+        egc = egc.rename(columns={"shared10_eod": "eod", "shared10_recall": "recall", "shared10_flag_rate": "flag_rate"})
+        egc["abs_gap"] = (egc.eod - target).abs()
+        eps_star = 0.01
     egc.to_csv(out / "eg_eps_curve.csv", index=False)
-    eps_star = float(egc.loc[egc.abs_gap.idxmin(), "eps"])
+    eg_star_dir = eg_dir or out / f"s2_eg_eps{eps_star}"
 
     gt_dir = out / "s2_gt_matched"
     rate_rows = []
@@ -204,8 +214,8 @@ def main() -> None:
         mean_row(p2 / "s1", "S1", "none (10% flag rate)", True),
         mean_row(out / f"a2_rate{rate_star}", f"A2 @ flag rate {rate_star:.0%}", "flag rate", True),
         mean_row(out / f"s1_rate{rate_star}", f"S1 @ flag rate {rate_star:.0%}", "flag rate", True),
-        mean_row(out / f"s2_eg_eps{eps_star}", f"S2-EG eps={eps_star}", "EG eps", True),
-        mean_row(p2 / "s2_eg", "S2-EG eps=0.01 (Phase 2 default)", "EG eps", True),
+        mean_row(eg_star_dir, f"S2-EG eps={eps_star}", "EG eps", True),
+        mean_row(p2 / "s2_eg", "S2-EG Phase 2 (superseded: base-matched weight)", "EG eps", True),
         mean_row(gt_dir, "S2-GT (threshold fraction t)", "group-threshold fraction", False),
         mean_row(p2 / "s2_gt", "S2-GT (full, EOD minimised)", "none", False),
     ]
@@ -220,7 +230,7 @@ def main() -> None:
     BM = {
         "JT chosen": B[JTL],
         "JT tuned": B[TUN],
-        "S2-EG matched": boots(out / f"s2_eg_eps{eps_star}"),
+        "S2-EG matched": boots(eg_star_dir),
         "S2-GT matched": boots(gt_dir),
         f"S1 @ {rate_star:.0%}": boots(out / f"s1_rate{rate_star}"),
     }
