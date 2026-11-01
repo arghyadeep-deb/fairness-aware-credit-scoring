@@ -44,7 +44,7 @@ Stages map to phases in specs/07_phased_build_plan.md (Phase 1 = Stages 0-2, Pha
 
 ## Stage 6: Operating point
 - [ ] configs/selection_rule.yaml committed (git hash earlier than sweep results).
-- [ ] Rule example: maximise AUC-PR subject to DIR >= 0.8 and worst-group ECE <= k x best baseline; one config chosen.
+- [ ] Rule (specs/09): maximise AUC-PR subject to EOD <= 0.04, AUC-ROC >= A2 - 0.02, worst-group ECE <= max(1.5 x S1, 0.02); DIR >= 0.80 is only a safety check; one config chosen.
 
 ## Stage 7: Post-hoc comparison
 - [ ] Prior correction, per-group Platt/isotonic (labelled analysis-only), ThresholdOptimizer compared with JT at matched fairness.

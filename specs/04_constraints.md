@@ -10,7 +10,7 @@
 
 ## Methodological
 - Single protected attribute (gender, binary after dropping XNA) in v1. Age groups optional extension.
-- Fairness definition in the loss: equalized-odds surrogate (main), demographic-parity surrogate (ablation). Selection rule keeps DIR >= 0.8 (NFR-03).
+- Fairness definition in the loss: equalized-odds surrogate (main), demographic-parity surrogate (ablation). Selection rule requires EOD <= 0.04 and keeps DIR >= 0.8 as a safety check (NFR-03).
 - Calibration is evaluated per gender group; per-group post-hoc calibration is analysis only (needs gender at inference).
 - Same preprocessing for all arms. Same splits. Same threshold rule. Same metric battery.
 - Equal Optuna budget per tuned arm (default 30 trials, from config).

@@ -1,0 +1,23 @@
+# Operating-point selection rule. Committed BEFORE any lambda-sweep result exists (CRITICAL_RULES 9).
+# Do not edit after the first sweep run. Text version: specs/09_resolved_decisions.md.
+version: 1
+data_split: validation          # selection never looks at the test split
+aggregate: mean_over_seeds      # 3 seeds per sweep point
+baselines:                      # reference values are read from the Phase 2 run at selection time
+  auc_roc_reference_arm: a2
+  ece_reference_arm: s1
+constraints:
+  eod_max: 0.04                 # equalized-odds difference, binding fairness constraint
+  dir_min: 0.80                 # safety check only (DIR is >= 0.93 for every baseline at a 10% flag rate)
+  auc_roc_margin: 0.02          # AUC-ROC >= AUC-ROC(a2) - margin
+  worst_group_ece:
+    multiplier: 1.5             # bound = max(multiplier * worst_group_ECE(s1), floor)
+    floor: 0.02                 # keeps the bound above bootstrap noise (S1 is about 0.008)
+objective: auc_pr               # choose the maximum among points satisfying every constraint
+min_auc_roc_for_frontier: 0.60  # specs/09: sweep points below this are discarded first
+relaxation_order:               # applied in this order, each step recorded in RUN_LOG
+  - {constraint: worst_group_ece.multiplier, from: 1.5, to: 2.0}
+  - {constraint: auc_roc_margin, from: 0.02, to: 0.03}
+fallback:
+  description: max auc_pr among points with dir >= 0.80, and raise a soft flag
+  dir_min: 0.80

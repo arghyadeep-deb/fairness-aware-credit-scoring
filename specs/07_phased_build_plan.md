@@ -72,7 +72,7 @@ If any gate item fails: do not advance; fix, or stop and report (hard stop rules
 - JT does not beat S2 at matched fairness (report honestly).
 - JT leakage AUC on z not lower than A2.
 - UCI Taiwan pending or results contradict Home Credit.
-- DIR >= 0.8 cannot be met at any sweep point with AUC-ROC >= A2 - 0.02.
+- EOD <= 0.04 cannot be met at any sweep point with AUC-ROC >= A2 - 0.02 (DIR >= 0.80 is only a safety check).
 
 ## Second dataset
 UCI Taiwan (Phase 6): file at data/raw/uci_taiwan/default of credit card clients.xls. If missing, write the loader + config, mark it PENDING in

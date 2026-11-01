@@ -34,13 +34,15 @@ Prior correction (S1): logit shift `-log(w_pos / w_neg)` applied on logits (anal
 - Stratified sampler: every batch has >= 64 samples per TARGET x gender cell.
 - Discard sweep points with val AUC-ROC < 0.60 from the frontier.
 
-## Operating-point selection rule (commit as configs/selection_rule.yaml before the sweep)
+## Operating-point selection rule (committed as configs/selection_rule.yaml before any sweep exists)
+Revised after Phase 2: at a 10% flag rate DIR is >= 0.93 for every baseline, so it cannot discriminate. The binding fairness constraint is now EOD.
 Among sweep points (mean over 3 seeds, VALIDATION only):
-1. `DIR >= 0.80`
+1. `EOD <= 0.04` (less than half the baseline A2 value of 0.086). `DIR >= 0.80` is kept only as a safety check.
 2. `AUC-ROC >= AUC-ROC(A2) - 0.02`
-3. `worst_group_ECE <= 1.5 * worst_group_ECE(S1)`
-Choose the point with maximum AUC-PR. If none satisfies all three, relax in this order and record: (3) 1.5 -> 2.0, then (2) 0.02 -> 0.03.
-If still none, pick the max-AUC-PR point with DIR >= 0.80 and set soft flag.
+3. `worst_group_ECE <= max(1.5 * worst_group_ECE(S1), 0.02)`. The 0.02 floor keeps the bound above the bootstrap noise level (S1 is about 0.008).
+4. Choose the point with maximum AUC-PR.
+If none satisfies all constraints, relax in this order and record: (3) multiplier 1.5 -> 2.0, then (2) margin 0.02 -> 0.03.
+If still none, pick the max-AUC-PR point with DIR >= 0.80 and set a soft flag.
 
 ## Matched-pair check
 For each test applicant of gender g, match to the nearest applicant of the other gender in the same split (k=1), distance =
@@ -66,3 +68,9 @@ MLflow 3.17 disables the plain `file:` tracking backend by default. Decision: us
 - Python 3.13 is the project interpreter (docs saying 3.11 are superseded).
 - Phase 1 baseline leakage: gender-from-X AUC 0.90 (LightGBM, test). Top proxies: OCCUPATION_TYPE, ORGANIZATION_TYPE, FLAG_OWN_CAR, EXT_SOURCE_1, AGE_YEARS. Default rate women 7.00%, men 10.14%.
 
+
+## Decisions made after the Phase 2 review (owner)
+- A1 (SMOTE-NC, ratio 0.5) is kept as run. Gate result unchanged: it shifts the prior ~5.7x vs ~11.4x for class weights, so it is not a like-for-like comparison with A2. Added A1b: SMOTE-NC at ratio 1.0 (matched prior shift), same tuning budget, 3 seeds.
+- REF (LightGBM) is a reference ceiling. Fit on the full train set with early stopping on validation; its row is replaced if the tuned fit is better. No TabTransformer-vs-trees statement until resolved.
+- S2 is split in two. S2-GT = S1 + group thresholds (analysis only, uses gender at inference, not deployable, validation-optimistic). S2-EG = S1-corrected scores + fairlearn ExponentiatedGradient (no gender at inference), the deployable sequential baseline.
+- Optuna: `n_startup_trials = 4`, fixed sampler seed, so TPE drives trials 5 to 10.
