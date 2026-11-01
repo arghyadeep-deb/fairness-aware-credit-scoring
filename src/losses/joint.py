@@ -14,6 +14,7 @@ let a term that is being minimised blow up its own gradient scale).
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Any
 
@@ -42,7 +43,12 @@ class JointConfig:
     ref_floor: float = 1e-3  # a reference below this is clamped (avoids dividing by ~0)
     adv_pretrain: bool = False  # DIAGNOSTIC (off): fit Head B on detached z during warm-up
     adv_mode: str = "grl"  # "grl" (spec) | "confusion" (bounded CE to a 0.5 target, a deviation)
-    adv_lr_mult: float = 1.0  # learning-rate multiplier of Head B (rescue b)
+    adv_lr_mult: float = 1.0  # learning-rate multiplier of Head B (Phase 4 rescue b)
+    # Phase 4b extended GRL rescue (all off by default; defaults reproduce Phase 4 exactly)
+    adv_steps: int = 1  # (a) head updates per trunk update
+    adv_clip: float = 0.0  # (b) per-row clip of the unweighted reversed gradient (0 = off)
+    adv_ramp: str = "linear"  # (c) "linear" | "ganin": 2/(1+exp(-10 p)) - 1 on the adversary weight
+    adv_smooth: float = 0.0  # (d) label smoothing eps on the gender targets
 
     @classmethod
     def from_config(cls, cfg: dict[str, Any], **lambdas: float) -> "JointConfig":
@@ -88,7 +94,8 @@ class JointLoss(nn.Module):
                 conf = adv_logit[1].float()
                 out["adv"] = F.binary_cross_entropy_with_logits(conf, torch.full_like(conf, 0.5))
             else:
-                out["adv"] = F.binary_cross_entropy_with_logits(adv_logit.float(), a.float())
+                tgt = a.float() * (1.0 - c.adv_smooth) + 0.5 * c.adv_smooth
+                out["adv"] = F.binary_cross_entropy_with_logits(adv_logit.float(), tgt)
         return out
 
     def _observe_warmup(self, logit, y, a, adv_logit) -> None:
@@ -127,7 +134,13 @@ class JointLoss(nn.Module):
 
     def lambdas(self) -> dict[str, float]:
         r = self.ramp()
-        return {"f": self.cfg.lambda_f * r, "c": self.cfg.lambda_c * r, "a": self.cfg.lambda_a * r}
+        ra = 2.0 / (1.0 + math.exp(-10.0 * r)) - 1.0 if self.cfg.adv_ramp == "ganin" else r
+        return {"f": self.cfg.lambda_f * r, "c": self.cfg.lambda_c * r, "a": self.cfg.lambda_a * ra}
+
+    def adv_weight(self) -> float:
+        """Current multiplier of the adversary term (lambda_a ramped, divided by its reference)."""
+        scale = 1.0 / self.ref["adv"] if (self.cfg.normalize == "initial" and self.ref) else 1.0
+        return self.lambdas()["a"] * scale
 
     def forward(
         self,

@@ -67,6 +67,9 @@ def _once(cfg, hp, train, val, cards, weights, seed, device, jc, max_epochs, lr_
         {"params": list(model.adversary.parameters()), "lr": lr * jc.adv_lr_mult},
     ]
     opt = torch.optim.AdamW(groups, weight_decay=hp["weight_decay"])
+    grl = model.adversary.grl
+    grl.clip = jc.adv_clip
+    grl.stats = [] if (jc.lambda_a > 0 and jc.adv_mode == "grl") else None
     loss_fn = JointLoss(jc, weights["0"], weights["1"])
     xc, xk = torch.from_numpy(train.cont).to(device), torch.from_numpy(train.cat).to(device)
     yt = torch.from_numpy(train.y).float().to(device)
@@ -86,6 +89,8 @@ def _once(cfg, hp, train, val, cards, weights, seed, device, jc, max_epochs, lr_
         for step in range(steps):
             ix = batches[step]
             loss_fn.set_epoch(epoch + step / steps)
+            if grl.stats is not None:
+                grl.weight = loss_fn.adv_weight()
             with torch.autocast(
                 "cuda", dtype=torch.bfloat16, enabled=device.type == "cuda" and tc["bf16"]
             ):
@@ -103,6 +108,18 @@ def _once(cfg, hp, train, val, cards, weights, seed, device, jc, max_epochs, lr_
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), tc["grad_clip"])
             opt.step()
+            if jc.adv_steps > 1 and grl.stats is not None and loss_fn.epoch >= jc.warmup_epochs:
+                # (a) extra head-only updates on this batch's detached z (backbone grads stay None)
+                zd = z.detach().float()
+                tgt = at[ix].float() * (1.0 - jc.adv_smooth) + 0.5 * jc.adv_smooth
+                for _ in range(jc.adv_steps - 1):
+                    opt.zero_grad(set_to_none=True)
+                    hl = torch.nn.functional.binary_cross_entropy_with_logits(
+                        model.adversary.net(zd).squeeze(-1), tgt
+                    )
+                    hl.backward()
+                    torch.nn.utils.clip_grad_norm_(model.adversary.parameters(), tc["grad_clip"])
+                    opt.step()
             sums["loss"] = sums.get("loss", 0.0) + loss.item()
             for k, v in parts.items():
                 sums[k] = sums.get(k, 0.0) + float(v)
@@ -122,8 +139,11 @@ def _once(cfg, hp, train, val, cards, weights, seed, device, jc, max_epochs, lr_
             "val_worst_group_ece": m["worst_group_ece"],
             "adv_head_auc": float(roc_auc_score(val.a, adv_lg)),
             "ramp": loss_fn.ramp(),
+            "adv_gz_norm_med": float(np.median(grl.stats)) if grl.stats else None,
             "seconds": time.time() - t0,
         }
+        if grl.stats is not None:
+            grl.stats.clear()
         if tr_probe is not None:
             ztr = predict_joint(model, tr_probe, device)[2]
             row["z_probe_auc"] = z_gender_probe(ztr, tr_probe.a, zva, val.a)
