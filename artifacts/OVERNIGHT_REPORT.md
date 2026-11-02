@@ -11,7 +11,7 @@ Sections A to E of the overnight instruction are done and committed; nothing was
 - Final test suite: 150 passed. Ruff clean on all new files.
 
 ## Headline findings (full text in SUMMARY.md)
-Gender is recoverable from features (AUC about 0.90). The class-weighted loss breaks calibration and the prior-correction formula repairs it (worst-group ECE 0.350 to 0.013). The sequential pipeline (S1 / S2-EG) matched or beat the joint model on every reported axis (S2-EG test EOD 0.0151 vs JT 0.0363). Single-step GRL does not reduce gender leakage; multi-step GRL lowers it modestly (0.80 to about 0.76). LightGBM leads the TabTransformer by about 0.019 AUC-ROC. Taiwan shows the same direction.
+Gender is recoverable from features (AUC about 0.90). The class-weighted loss breaks calibration and the prior-correction formula repairs it (worst-group ECE 0.350 to 0.013). S2-EG is significantly ahead of JT chosen on AUC-ROC, AUC-PR, worst-group ECE, EOD and DIR, and tied on recall (S2-EG test EOD 0.0151 vs JT 0.0363, a barely significant gap). JT's EOD gain over A2 and S1 is not significant on test. Single-step GRL does not reduce gender leakage; multi-step GRL lowers it modestly (0.80 to about 0.76). LightGBM leads the TabTransformer by about 0.019 AUC-ROC. Taiwan shows the same direction.
 
 ## Blocked or partial
 - Nothing is blocked. `artifacts/OVERNIGHT_BLOCKED.md` (gitignored) described the earlier memory block, which was resolved after you cleared memory; it is now marked resolved.
@@ -27,7 +27,7 @@ Gender is recoverable from features (AUC about 0.90). The class-weighted loss br
 7. Taiwan: JT chosen loses 0.05 AUC-PR with unchanged lambdas.
 8. Phase 6 predictions used bf16 on GPU; serving is fp32 CPU (gap 0.00184, in the manifest).
 9. Codex edited the working tree without authorisation; reviewed, tested, kept. Two harness memory kills, resolved by a smaller workload and a restart after you cleared memory.
-10. Browser check ran on port 8765 because port 8000 was stuck half-closed (FIN_WAIT_1, PID 47112 at the time); the documented command still uses 8000.
+10. Browser check ran on port 8765 because port 8000 was held by the owner's separate VECTOR API (`run_vector.py api`, PID 47112), not by a leftover server of this project as first written; the documented command still uses 8000.
 11. ThresholdOptimizer is not flag-rate matched (analysis only).
 12. The bundle is gitignored; a fresh clone must run `scripts/freeze_bundle.py`.
 13. Harness blocked `rm -rf`, so `artifacts/cleanvenv/` and `artifacts/ui/_profile/` remain on disk (gitignored). Delete them by hand if you want the space.
@@ -45,7 +45,7 @@ Gender is recoverable from features (AUC about 0.90). The class-weighted loss br
 python scripts/freeze_bundle.py         # only if artifacts/bundle/v1 is missing
 uvicorn api.main:app --port 8000        # open http://127.0.0.1:8000/
 ```
-If port 8000 is still stuck, reboot or use `--port 8765`.
+If port 8000 is busy (for example while VECTOR is running), use `--port 8765`.
 
 ## What you must check in the morning
 1. Look at `artifacts/ui/01_form.png`, `02_result.png`, `03_dashboard.png` and click through the live demo yourself (visual check is pending).
@@ -53,3 +53,6 @@ If port 8000 is still stuck, reboot or use `--port 8765`.
 3. Decide how the paper frames the joint model given the negative result (SUMMARY.md section 2 and the claims checklist; rule 22 wording on Kleinberg/Pleiss still has to be applied in the paper text).
 4. Confirm you are happy with the Codex edits that were kept (RUN_LOG, overnight section A).
 5. Decide whether to push (not done) and whether to delete `artifacts/cleanvenv` and `artifacts/ui/_profile`.
+
+## Update (2026-11-02): three-way lambda exploration
+Validation only, SUMMARY.md section 9. No point passes all limits or beats S2-EG on AUC-PR; the headline is unchanged. Apps closed to free memory must be restarted by hand: VECTOR API, Docker Desktop and others listed in RUN_LOG.

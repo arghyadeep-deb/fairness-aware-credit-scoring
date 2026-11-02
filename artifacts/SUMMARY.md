@@ -10,7 +10,7 @@
 > 7. Taiwan: JT chosen loses 0.05 AUC-PR with unchanged lambdas (no re-tuning by rule); EOD differences there are mostly within noise.
 > 8. Predictions in Phase 6 were scored with bf16 on GPU; the served fp32 model differs by 0.00184 on the test pool (in the manifest).
 > 9. A different tool (Codex) edited the working tree without authorisation during Phase 6; edits were reviewed, tested and kept (RUN_LOG, overnight section A). Two harness memory kills occurred and were resolved by reducing the workload.
-> 10. The Phase 7 browser check ran on Edge only, on port 8765 (port 8000 was stuck half-closed). A human visual review is still pending.
+> 10. The Phase 7 browser check ran on Edge only, on port 8765 (port 8000 was held by the owner's separate VECTOR API (`run_vector.py api`, PID 47112), not by a leftover server of this project as first written). A human visual review is still pending.
 > 11. ThresholdOptimizer is not flag-rate matched (flags 34.7% of applicants): analysis only.
 
 Scope. An **empirical study** of how imbalance correction, a fairness intervention and calibration interact in credit scoring, plus a joint objective `L = weighted_CE + lambda_f*fairness + lambda_c*calibration + lambda_a*adversarial` that makes the trade-off explicit. It is not a new method. Data: Home Credit Default Risk (Kaggle, **not Indian data**); secondary check: UCI Default of Credit Card Clients (Taiwan).
@@ -35,7 +35,7 @@ Full table with 95% paired-bootstrap CIs: `artifacts/tables/test_results_all_arm
 | S2-GT group thresholds | analysis only | .7463 | .2209 | .0131 | .0213 | .992 |
 | ThresholdOptimizer (not rate-matched) | analysis only | .7463 | .2209 | .0131 | .0294 | .994 |
 
-Paired test differences, JT chosen minus S2-EG: AUC-ROC -0.0029, AUC-PR -0.0065, worst-group ECE +0.0056 (all significant), EOD +0.0177 (CI 0.0008 to 0.0310, significant). JT chosen does not match or beat the sequential baseline on any reported axis. Against S1, the EOD difference is -0.0238 and its CI includes 0.
+Paired test differences, JT chosen minus S2-EG: AUC-ROC -0.0029, AUC-PR -0.0065, worst-group ECE +0.0056 (all significant), EOD +0.0177 (CI 0.0008 to 0.0310, significant). JT chosen is significantly behind S2-EG on AUC-ROC, AUC-PR, worst-group ECE, EOD and DIR (DIR -0.0075), and tied on recall (+0.0058, CI includes 0); the EOD gap is barely significant. JT's EOD gain over A2 and S1 is not significant on test (-0.0238, CI -0.0602 to 0.0109). Tuned JT ties S2-EG on EOD (+0.0050, CI includes 0) and DIR. The rule-selected JT has the adversary off (lambda_a = 0); JT-A with all three terms on (k5, lambda_a 0.25) has better EOD (0.0212) and lower leakage (about 0.76 vs 0.80) but exceeds the 0.02 worst-group ECE cap (0.0249). S2-EG's AUC and ECE come from the S1 score while its flags come from the EG mixture; the EG score's own validation AUC-PR is 0.2198 vs 0.2212, so the conclusion does not change.
 
 ## 2. Headline findings (honest)
 
@@ -96,3 +96,29 @@ Folder `artifacts/runs/20261102_diagE/` (tables copied to `artifacts/tables/diag
 | JT-A+PH + S1 + S2-EG | .7399 | .2100 | .0290 | .0071 | .986 |
 
 Paired differences (95% CI): JT-A+PH + S1 + S2-EG minus S2-EG: AUC-ROC -0.0061 (sig.), AUC-PR -0.0112 (sig.), worst-group ECE +0.0159 (sig.), EOD -0.0012 (CI -0.0131 to 0.0109, not distinguishable). Versus JT chosen: AUC-PR -0.0045 (sig.), worst-group ECE +0.0108 (sig.), EOD -0.0113 (CI -0.0224 to 0.0007, not significant). Verdict: adding the multi-step adversary before the post-hoc steps costs ranking quality and calibration and gives no fairness gain that is distinguishable from S2-EG; the sequential baseline still stands. Validation numbers only; no test access was made (guard logs unchanged).
+
+## 9. Three-way lambda exploration (validation only; diagnostic, declared after the test run; NOT in the test table)
+
+Pre-declared in commit `58453d5`, at the owner's request, because the lambdas interact and the main sweep held lambda_a at 0. 20 points x 3 seeds = 60 runs, adv_steps 5. Tables: `artifacts/tables/three_way_table.csv`, `three_way_diffs.csv`. The selection rule was not re-applied or edited; the limits below are only used as a yardstick. Differences are not corrected for multiple comparisons, and validation fairness has been optimistic before (JT chosen EOD 0.0234 to 0.0363 on test).
+
+**No point passes all the rule's limits, and none beats S2-EG on AUC-PR (best .2154 vs .2212).**
+
+| Point (lambda_f, lambda_c, lambda_a) | AUC-ROC | AUC-PR | Worst-group ECE | EOD | DIR | z-probe |
+|---|---|---|---|---|---|---|
+| Reference: JT chosen (0.05, 2, 0) | .7428 | .2146 | .0189 | .0234 | .975 | about .80 |
+| Reference: S2-EG | .7460 | .2212 | .0123 | .0108 | .984 | n/a |
+| Weighted (0.05, 2, 0.25), closest to all limits | .7425 | .2127 | .0203 | .0126 | .980 | .757 |
+| Weighted (0.05, 1, 0.1), best AUC-PR | .7413 | .2154 | .0626 | .0128 | .985 | .749 |
+| Weighted (0.05, 0.5, 0.1), lowest EOD | .7428 | .2153 | .1392 | .0056 | .986 | .754 |
+| Weighted (0.1, 0.5, 0.25), lowest weighted z-probe | .7384 | .2101 | .1457 | .0077 | .986 | .722 |
+| Unweighted (0.05, 0, 0), best unweighted AUC-PR | .7315 | .2016 | .0299 | .0160 | .986 | .714 |
+| Unweighted (0.05, 0, 0.25), lowest z-probe | .7278 | .2011 | .0364 | .0146 | .988 | .681 |
+| Unweighted (0.1, 0.5, 0) | .6647 | .1375 | .0186 | .0470 | .980 | .823 |
+
+Paired differences for weighted (0.05, 2, 0.25): against JT chosen, EOD -0.0090 (CI -0.0197 to 0.0017, not significant), DIR +0.0052 (sig.), worst-group ECE +0.0014 (sig.), AUC-PR -0.0018 (not significant). Against S2-EG, AUC-ROC -0.0036, AUC-PR -0.0085, worst-group ECE +0.0066, DIR -0.0040 (all sig.), EOD +0.0010 (not significant).
+
+Findings:
+1. The lambdas do interact. Lowering lambda_c from 2 to 0.5 raises worst-group ECE from about .02 to about .14 and changes EOD and the z-probe. Keeping all three on gives a modest gain over JT chosen (lower leakage, better DIR, EOD lower but not significantly) at about the same AUC.
+2. Calibration remains the limit: in the weighted grid only lambda_c = 2 gets near the cap, and the one point there at .0203 misses it narrowly. Low-lambda_c points are reported raw, without prior correction.
+3. The hypothesis that class weights and the calibration term were fighting is NOT supported. Unweighted joint models are worse (AUC-PR at most .2016, vs A0's .2201 alone), and adding lambda_c = 0.5 collapses them (AUC-ROC about .67).
+4. Three-way tuning does not change the headline: the sequential baseline stays ahead on ranking and calibration. These are hypotheses for future work on fresh data, not test results. The served model and test table are unchanged.
