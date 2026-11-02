@@ -62,13 +62,21 @@ def main() -> None:
     FIG.mkdir(parents=True, exist_ok=True)
     TAB.mkdir(parents=True, exist_ok=True)
     p6 = p6_dir()
-    cmp_ = pd.DataFrame(jload("comparison")["rows"])
+    cmp_ = pd.DataFrame(jload("comparison")["rows"]).assign(posthoc=False)
+    # Post-hoc arms: added after the original test run; the bundle stays frozen, so they come from saved tables.
+    ph_file = ROOT / "artifacts" / "tables" / "posthoc_ref_test_table.csv"
+    if ph_file.exists():
+        ph = pd.read_csv(ph_file)
+        ph = ph[ph.arm.isin(["REF-S1", "REF-EG"])]
+        ph = ph.assign(arm=ph.arm + " (post-hoc)", deployable=True, posthoc=True)
+        cmp_ = pd.concat([cmp_, ph], ignore_index=True)
+        cmp_["deployable"] = cmp_["deployable"].astype(bool)
     cmp_.to_csv(TAB / "test_results_all_arms.csv", index=False)
     (TAB / "test_results_all_arms.md").write_text(
-        md_table(cmp_.assign(use=np.where(cmp_.deployable, "deployable", "analysis only")),
+        md_table(cmp_.assign(use=np.where(cmp_.posthoc.astype(bool), "deployable, added after the original test run, post-hoc", np.where(cmp_.deployable, "deployable", "analysis only"))),
                  ["arm", "use", "auc_roc", "auc_pr", "worst_group_ece", "eod", "dir", "recall"]), encoding="utf-8")  # fmt: skip
     # ---- Pareto: deployable arms, EOD vs AUC-PR and EOD vs worst-group ECE (test, 95% CI) ----
-    dep = cmp_[cmp_.deployable & ~cmp_.arm.str.startswith("JT-A")]
+    dep = cmp_[cmp_.deployable & ~cmp_.arm.str.startswith("JT-A") & (cmp_.arm != "REF-S1 (post-hoc)")]
     fig, ax = plt.subplots(1, 2, figsize=(13, 4.8))
     for a, (y, yl, lg) in zip(ax, [("auc_pr", "AUC-PR (higher better)", False), ("worst_group_ece", "worst-group ECE (lower better)", True)]):  # fmt: skip
         for _, r in dep.iterrows():

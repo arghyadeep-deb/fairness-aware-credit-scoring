@@ -27,3 +27,5 @@
 | S2-EG | deployable | 0.7463 | 0.2209 | 0.0131 | 0.0151 | 0.9893 | 0.3077 |
 | S2-GT | analysis only | 0.7463 | 0.2209 | 0.0131 | 0.0213 | 0.9921 | 0.3209 |
 | ThresholdOptimizer | analysis only | 0.7463 | 0.2209 | 0.0131 | 0.0294 | 0.9938 | 0.6711 |
+| REF-S1 (post-hoc) | deployable, added after the original test run, post-hoc | 0.7661 | 0.2513 | 0.0085 | 0.0849 | 0.9423 | 0.3464 |
+| REF-EG (post-hoc) | deployable, added after the original test run, post-hoc | 0.7661 | 0.2513 | 0.0085 | 0.0168 | 0.9805 | 0.3131 |

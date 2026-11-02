@@ -71,7 +71,8 @@ def test_guard_log_entries_are_whitelisted_probe_or_declared_phase6_arms():
         if e["purpose"] == "leakage_probe_gender_only":
             assert e["with_target"] is False
         else:
-            assert e["purpose"].startswith("phase6:")
+            assert e["purpose"].startswith("phase6:") or e["purpose"] == "posthoc:REF-EG"
     p6 = [p for p in purposes if p.startswith("phase6:")]
     assert len(p6) == len(set(p6))  # never two accesses for the same arm
     assert purposes.count("leakage_probe_gender_only") == 1
+    assert purposes.count("posthoc:REF-EG") <= 1  # declared in RUN_LOG, commit 6e3fdfc

@@ -12,6 +12,8 @@
 > 9. A different tool (Codex) edited the working tree without authorisation during Phase 6; edits were reviewed, tested and kept (RUN_LOG, overnight section A). Two harness memory kills occurred and were resolved by reducing the workload.
 > 10. The Phase 7 browser check ran on Edge only, on port 8765 (port 8000 was held by the owner's separate VECTOR API (`run_vector.py api`, PID 47112), not by a leftover server of this project as first written). A human visual review is still pending.
 > 11. ThresholdOptimizer is not flag-rate matched (flags 34.7% of applicants): analysis only.
+> 12. POST-HOC ADDITION: REF-S1 and REF-EG were added after the original test run, knowing its results, and are labelled post-hoc everywhere. REF-EG is one extra look at the Home Credit test set (guard log 28 + 1 = 29). It uses a substitute for z (the REF TreeSHAP vector), because LightGBM has no representation. REF was never class-weighted, despite the stale `scale_pos_weight` text in `configs/arm_ref.yaml` and the `run_ref` docstring, so REF-S1 equals REF and needed no test access.
+> 13. Taiwan EG cannot reach a 10% flag rate: the class-weight search stops near its lower bound of 1 (REF-EG train rate 14 to 16%, existing S2-EG 12 to 13%), so the existing Taiwan S2-EG at 10% relies on the shared rule to trim flags. REF-EG failed its Taiwan gate and was NOT run on the Taiwan test set (guard log stays at 8).
 
 Scope. An **empirical study** of how imbalance correction, a fairness intervention and calibration interact in credit scoring, plus a joint objective `L = weighted_CE + lambda_f*fairness + lambda_c*calibration + lambda_a*adversarial` that makes the trade-off explicit. It is not a new method. Data: Home Credit Default Risk (Kaggle, **not Indian data**); secondary check: UCI Default of Credit Card Clients (Taiwan).
 
@@ -31,6 +33,8 @@ Full table with 95% paired-bootstrap CIs: `artifacts/tables/test_results_all_arm
 | JT-A k5 la0.25 (multi-step GRL) | deployable | .7429 | .2150 | .0249 | .0212 | .987 |
 | H1 / H3 (hybrids) | deployable | .7414 / .7161 | .2109 / .1715 | .0258 / .0642 | .0274 / .0330 | .993 / .997 |
 | **REF LightGBM** | deployable | .7661 | .2513 | .0085 | .0849 | .942 |
+| REF-S1 (= REF, correction constant 0); added after the original test run, post-hoc | deployable, post-hoc | .7661 | .2513 | .0085 | .0849 | .942 |
+| **REF-EG** REF + ExponentiatedGradient; added after the original test run, post-hoc | deployable, post-hoc | .7661 | .2513 | .0085 | .0168 | .981 |
 | per-group Platt | analysis only | .7473 | .2223 | .0055 | .1221 | .919 |
 | S2-GT group thresholds | analysis only | .7463 | .2209 | .0131 | .0213 | .992 |
 | ThresholdOptimizer (not rate-matched) | analysis only | .7463 | .2209 | .0131 | .0294 | .994 |
@@ -50,7 +54,7 @@ Paired test differences, JT chosen minus S2-EG: AUC-ROC -0.0029, AUC-PR -0.0065,
 
 ## 3. Configurations tried (for disclosure)
 
-Optuna trials: 10 per tuned arm (A0, A1, A1b, A2, A3, A4, A5, G1 = 80) plus 10 for tuned JT = 90; the first Phase 2 run (kept) tuned the same arms once more with different trials. JT lambda points: 20 main + 6 confusion-adversary + 8 fine = 34 compared by the rule (+2 ablation-only points). Smoke/diagnostic joint configurations: 9. Phase 4 adversary rescue: 10 variants plus a control. Multi-step GRL rescue: 32 variants (57 runs including extra seeds). H arms: 3. S2-EG: 2 implementations (v1 unmatched, kept; v2 final) plus 6 eps values. REF: 4 LightGBM settings. S2 group thresholds: 1 grid search. The selection rule was applied twice (26 and 34 points) with the same winner. After the test run, a three-way lambda exploration added 20 more lambda points (60 runs: 12 class-weighted, 8 unweighted; validation only, selection rule not re-applied; section 9), plus the validation-only JT-A+PH diagnostic (section 8). Home Credit test set: 28 guard-log entries (1 whitelisted probe + exactly 1 per arm for 27 arms); Taiwan: 8 entries.
+Optuna trials: 10 per tuned arm (A0, A1, A1b, A2, A3, A4, A5, G1 = 80) plus 10 for tuned JT = 90; the first Phase 2 run (kept) tuned the same arms once more with different trials. JT lambda points: 20 main + 6 confusion-adversary + 8 fine = 34 compared by the rule (+2 ablation-only points). Smoke/diagnostic joint configurations: 9. Phase 4 adversary rescue: 10 variants plus a control. Multi-step GRL rescue: 32 variants (57 runs including extra seeds). H arms: 3. S2-EG: 2 implementations (v1 unmatched, kept; v2 final) plus 6 eps values. REF: 4 LightGBM settings. S2 group thresholds: 1 grid search. The selection rule was applied twice (26 and 34 points) with the same winner. After the test run, a three-way lambda exploration added 20 more lambda points (60 runs: 12 class-weighted, 8 unweighted; validation only, selection rule not re-applied; section 9), plus the validation-only JT-A+PH diagnostic (section 8). Home Credit test set: 28 guard-log entries (1 whitelisted probe + exactly 1 per arm for 27 arms); Taiwan: 8 entries. Post-hoc: Home Credit + 1 (`posthoc:REF-EG`) = 29; Taiwan + 0 = 8 (REF-S1 equals REF, and REF-EG failed its Taiwan gate). Post-hoc configurations: REF-EG, one configuration on each dataset (EG class-weight bisection on train, eps 0.01); REF-S1 adds none.
 
 ## 4. Claims checklist (docs/CRITICAL_RULES.md rules 19 to 22)
 
@@ -122,3 +126,31 @@ Findings:
 2. Calibration remains the limit: in the weighted grid only lambda_c = 2 gets near the cap, and the one point there at .0203 misses it narrowly. Low-lambda_c points are reported raw, without prior correction.
 3. The hypothesis that class weights and the calibration term were fighting is NOT supported. Unweighted joint models are worse (AUC-PR at most .2016, vs A0's .2201 alone), and adding lambda_c = 0.5 collapses them (AUC-ROC about .67).
 4. Three-way tuning does not change the headline: the sequential baseline stays ahead on ranking and calibration. These are hypotheses for future work on fresh data, not test results. The served model and test table are unchanged.
+
+## 10. Post-hoc arms REF-S1 and REF-EG (added after the original test run, post-hoc)
+
+Declared in commit `6e3fdfc` before any run, but after the original test results were known, so this comparison is not as clean as the original one. Mean of 3 seeds, shared 10% rule, 1,000 paired bootstrap resamples. Tables: `artifacts/tables/posthoc_ref_*.csv`. AUC and ECE for REF-EG and S2-EG come from the underlying probabilities (REF and S1); only their flags come from EG.
+
+Home Credit validation:
+
+| Arm | AUC-ROC | AUC-PR | Worst-group ECE | EOD | DIR | Recall |
+|---|---|---|---|---|---|---|
+| REF / REF-S1 | .7646 | .2410 | .0083 | .0971 | .9345 | .3363 |
+| REF-EG | .7646 | .2410 | .0083 | .0297 | .9704 | .3076 |
+| S2-EG | .7460 | .2212 | .0123 | .0108 | .9844 | .3103 |
+| JT chosen | .7428 | .2146 | .0189 | .0234 | .9751 | .3097 |
+
+Home Credit test:
+
+| Arm | AUC-ROC | AUC-PR | Worst-group ECE | EOD | DIR | Recall |
+|---|---|---|---|---|---|---|
+| REF / REF-S1 | .7661 | .2513 | .0085 | .0849 | .9423 | .3464 |
+| REF-EG | .7661 | .2513 | .0085 | .0168 | .9805 | .3131 |
+| S2-EG | .7463 | .2209 | .0131 | .0151 | .9893 | .3077 |
+| JT chosen | .7433 | .2145 | .0198 | .0363 | .9818 | .3136 |
+
+REF-EG minus S2-EG on test (95% CI): AUC-ROC +0.0198 (0.0161 to 0.0235), AUC-PR +0.0303 (0.0235 to 0.0368), worst-group ECE -0.0047 (-0.0062 to -0.0011), all significantly better; EOD +0.0017 (-0.0302 to 0.0332) and recall +0.0054 (-0.0064 to 0.0159), not distinguishable; DIR -0.0088 (-0.0141 to -0.0036), significantly worse. On validation EOD is +0.0189 (-0.0026 to 0.0356), also not distinguishable, but the point estimate is about three times S2-EG's.
+
+REF-EG minus REF on test: EOD -0.0681 (-0.0847 to -0.0385), DIR +0.0382, recall -0.0333 (all significant), so the fairness step works and costs recall. Most of the AUC gain does not reach the 10% decisions: recall at the flag rate ties S2-EG. REF-EG's own decision score has AUC-PR about .2456 (S2-EG .2194), so the ranking gain is not only an artefact of quoting REF's probabilities.
+
+Verdict: REF-EG beats S2-EG on ranking and calibration, is tied on EOD and recall, and is slightly worse on DIR. This does not change the served model. Because it was added after the test results were known, treat it as a strong hypothesis, not a confirmed result. Taiwan: REF-EG failed its gate (see soft flag 13); validation numbers only, in `artifacts/tables/posthoc_ref_taiwan_validation_table.csv`.

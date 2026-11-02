@@ -36,6 +36,18 @@ nb.cells = [
         "    if n.endswith('.csv'): display(pd.read_csv(T / n).round(4))\n"
         "    else: display(Markdown((T / n).read_text(encoding='utf-8')))"
     ),
+    md(
+        "## Post-hoc arms: REF-S1 and REF-EG (added after the original test run, post-hoc)\n\n"
+        "**What this shows.** REF-S1 equals REF because REF has no class weights. REF-EG adds the gender-blind EG step. "
+        "Declared before running, but after the original test results were known. Validation first, then test, read from saved tables."
+    ),
+    code(
+        "for n in ['validation_table', 'test_table']:\n"
+        "    print(n); display(pd.read_csv(T / f'posthoc_ref_{n}.csv')[['arm', 'flag_rate', 'auc_roc', 'auc_pr', 'worst_group_ece', 'eod', 'dir', 'recall']].round(4))\n"
+        "d = pd.read_csv(T / 'posthoc_ref_test_diffs.csv')\n"
+        "display(d[(d.arm == 'REF-EG') & (d.minus == 'S2-EG')].round(4))\n"
+        "print('Guard entries:', sum(1 for _ in open(ROOT / 'artifacts' / 'guard' / 'test_access.jsonl')), sum(1 for _ in open(ROOT / 'artifacts' / 'guard' / 'taiwan_access.jsonl')))"
+    ),
 ]
 nbf.write(nb, ROOT / "notebooks" / "08_figures_and_summary.ipynb")
 print("written")
