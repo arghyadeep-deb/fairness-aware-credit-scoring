@@ -34,6 +34,12 @@
       row("Matched applicant (other gender)", (r.matched_probability * 100).toFixed(2) + "%");
       row("Difference", (r.delta * 100).toFixed(2) + " percentage points");
       row("Typical difference across all matched pairs", (r.population_mean_abs_delta * 100).toFixed(2) + " percentage points");
+      if (r.self_excluded) {
+        const note = document.createElement("p");
+        note.className = "muted small";
+        note.textContent = "This applicant's own record is in the reference pool, so it was left out of the search. Sample applicants have no stated gender, so this comparison relies on the gender you chose.";
+        out.appendChild(note);
+      }
     } catch (e) {
       const msg = e.code === "NO_MATCH" ? "No sufficiently similar applicant was found." : e.message;
       showStatus(statusEl, "err", msg);

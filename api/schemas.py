@@ -70,6 +70,7 @@ class MatchedResponse(BaseModel):
     own_probability: float
     matched_probability: float
     delta: float
+    self_excluded: bool = False
     matched_features: dict[str, Any]
     population_mean_abs_delta: float
     model_version: str

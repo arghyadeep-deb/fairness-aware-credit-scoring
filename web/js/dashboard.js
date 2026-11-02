@@ -26,7 +26,7 @@
   function proxy(p) {
     const t = document.getElementById("proxy"); t.replaceChildren();
     line(t, "Gender predicted from the raw input features: AUC " + f3(p.before_auc_features) + " (0.5 = no signal).");
-    line(t, "Gender predicted from the learned representation z (fresh probe, test): A2 AUC " + f3(p.after_auc_z.A2) + "; joint model AUC " + f3(p.after_auc_z.JT) + ".");
+    line(t, "Gender predicted from the learned representation z (fresh probe, test): A2 AUC " + f3(p.after_auc_z.A2) + "; joint model AUC " + f3(p.after_auc_z.JT) + " (adversary off, not a GRL result).");
     line(t, "Gender predicted from SHAP-attribution vectors: A2 " + f3(p.shap_probe_auc.A2) + "; joint model " + f3(p.shap_probe_auc.JT) + ".");
     line(t, "Top proxy features by gain (gender-from-features probe): " + p.top_proxy_features.slice(0, 6).map((x) => x.feature + " " + (x.gain * 100).toFixed(0) + "%").join(", ") + ".");
     line(t, p.note);

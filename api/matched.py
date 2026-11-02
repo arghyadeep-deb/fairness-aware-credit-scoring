@@ -13,20 +13,30 @@ from api.schemas import ApplicantRecord
 from api.service import predict_arrays, to_arrays
 
 K_CAND = 50
+# A record this close to a pool row with the same categoricals IS that row (sample applicants are rounded copies of
+# pool rows). Measured: samples sit 0.002 to 0.0075 from their own row; among 1,791 sampled pool rows the nearest
+# other row with the same categoricals is at least 0.26 away.
+SELF_TOL = 0.05
 
 
-def nearest_other_gender(cont_pool, cat_pool, a_pool, cont, cat, own_gender_code: int) -> int:
+def nearest_other_gender(
+    cont_pool, cat_pool, a_pool, cont, cat, own_gender_code: int
+) -> tuple[int, bool]:
+    """(pool index of the match, whether the applicant's own row was left out of the search)."""
     cand = np.flatnonzero(a_pool != own_gender_code)
     d = np.sqrt(((cont_pool[cand] - cont[None, :]) ** 2).sum(1))
+    is_self = (d < SELF_TOL) & (cat_pool[cand] == cat[None, :]).all(1)
+    if is_self.any():
+        cand, d = cand[~is_self], d[~is_self]
     top = np.argpartition(d, K_CAND)[:K_CAND]
     mism = (cat_pool[cand[top]] != cat[None, :]).sum(1)
-    return int(cand[top[np.argmin(d[top] + 0.5 * mism)]])
+    return int(cand[top[np.argmin(d[top] + 0.5 * mism)]]), bool(is_self.any())
 
 
 def matched_pair(b: Bundle, rec: ApplicantRecord, gender: str) -> dict:
     cont, cat = to_arrays(b, rec)
     own = float(predict_arrays(b, cont, cat)[0])
-    j = nearest_other_gender(
+    j, self_excluded = nearest_other_gender(
         b.pool_cont, b.pool_cat, b.pool_a, cont[0], cat[0], 1 if gender == "M" else 0
     )
     pm = float(predict_arrays(b, b.pool_cont[j : j + 1], b.pool_cat[j : j + 1])[0])
@@ -37,6 +47,7 @@ def matched_pair(b: Bundle, rec: ApplicantRecord, gender: str) -> dict:
         "own_probability": own,
         "matched_probability": pm,
         "delta": pm - own,
+        "self_excluded": self_excluded,
         "matched_features": feats,
         "population_mean_abs_delta": float(b.docs["matched_stats"]["mean_abs_delta"]),
         "model_version": b.version,

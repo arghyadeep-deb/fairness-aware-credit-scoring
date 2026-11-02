@@ -125,6 +125,7 @@ def main() -> int:
         time.sleep(1.5)
         report["steps"]["slider_nearest"] = c.js("document.getElementById('near').textContent.slice(0,120)")
         report["steps"]["honest_banner"] = c.js("document.getElementById('honest').textContent")
+        report["steps"]["proxy_label_ok"] = bool(c.js("document.getElementById('proxy').textContent.includes('adversary off, not a GRL result')"))
         report["steps"]["main_table_rows"] = c.js("[...document.querySelectorAll('#cmp_main tr')].slice(1).map(r => r.cells[0].textContent)")
         report["steps"]["served_highlighted"] = c.js("document.querySelector('#cmp_main tr.served').cells[0].textContent")
         report["steps"]["ci_hover_sample"] = c.js("document.querySelector('#cmp_main tr.served td[title]').title")

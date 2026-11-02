@@ -437,3 +437,24 @@ def test_posthoc_rows_stay_outside_the_frozen_comparison(client):
 
     data = _json.loads((_P(__file__).resolve().parents[1] / "web/data/posthoc_arms.json").read_text(encoding="utf-8"))
     assert data["rows"][0]["arm"] == "REF-EG" and data["rows"][0]["posthoc"] is True
+
+
+def test_nearest_other_gender_leaves_out_the_applicants_own_row():
+    from api.matched import nearest_other_gender
+
+    rng = np.random.default_rng(0)
+    cont, cat = rng.normal(size=(200, 4)).astype("float32"), np.zeros((200, 2), dtype="int64")
+    a = np.zeros(200, dtype="int64")
+    q = cont[7] + 0.001  # a rounded copy of pool row 7
+    j, excluded = nearest_other_gender(cont, cat, a, q, cat[7], own_gender_code=1)
+    assert excluded and j != 7
+    far = cont[7] + 5.0  # no pool row is this applicant
+    assert nearest_other_gender(cont, cat, a, far, cat[7], own_gender_code=1)[1] is False
+
+
+def test_sample_applicants_never_match_themselves(client):
+    for rec in client.get("/examples").json()["examples"]:
+        for g in ("M", "F"):
+            j = client.post("/matched-pair", json={"record": rec, "gender": g}).json()
+            assert abs(j["delta"]) > 1e-3 or not j["self_excluded"]
+            assert isinstance(j["self_excluded"], bool)
