@@ -48,6 +48,18 @@ nb.cells = [
         "display(d[(d.arm == 'REF-EG') & (d.minus == 'S2-EG')].round(4))\n"
         "print('Guard entries:', sum(1 for _ in open(ROOT / 'artifacts' / 'guard' / 'test_access.jsonl')), sum(1 for _ in open(ROOT / 'artifacts' / 'guard' / 'taiwan_access.jsonl')))"
     ),
+    md(
+        "## Robustness replication on 5 fresh splits (post-hoc)\n\n"
+        "**What this shows.** Frozen settings on split seeds 43 to 47, one model seed per split, read from saved tables. "
+        "The original hyperparameters and lambdas were chosen on split 42, whose rows can fall into the new test sets, so this is a robustness check and not a clean out-of-sample test."
+    ),
+    code(
+        "display(pd.read_csv(T / 'repeated_splits_summary.csv').round(4))\n"
+        "display(pd.read_csv(T / 'repeated_splits_paired.csv').round(4))\n"
+        "display(pd.read_csv(T / 'repeated_splits_val_vs_test_eod.csv').round(4))\n"
+        "print('Repeated guard entries:', sum(1 for _ in open(ROOT / 'artifacts' / 'guard' / 'repeated_splits.jsonl')))\n"
+        "display(Image(filename=str(ROOT / 'artifacts' / 'figures' / 'repeated_splits.png'), width=900))"
+    ),
 ]
 nbf.write(nb, ROOT / "notebooks" / "08_figures_and_summary.ipynb")
 print("written")
