@@ -28,6 +28,9 @@ PAKDD 2010 was DROPPED (no official download, no stated licence): do not look fo
 7. Never overwrite results. Every run gets a new timestamped folder / MLflow run.
 8. A stage is done only when its tests pass and its GATE report prints.
 
+## Other processes on this machine
+Never stop, kill or force-close any process, application or service outside this project (for example Ollama, VECTOR, Docker, browsers, chat apps). If memory is short, stop only processes this session started, reduce the workload, and tell the owner what to close.
+
 ## Notebooks
 Every phase ends with an executed .ipynb report in notebooks/ (docs/CODE_STYLE.md, rule 31). Logic stays in src/; notebooks only load results and show tables/charts.
 

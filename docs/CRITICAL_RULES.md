@@ -45,3 +45,4 @@
 29. No database in the application and no persistence of applicant data (inputs, scores, gender). The API is stateless; never log applicant values.
 30. The frontend must build its form from `/meta/options`; never hard-code category lists or ranges in JS.
 31. Notebooks are .ipynb files in notebooks/, one per phase (names in docs/CODE_STYLE.md). They are thin report notebooks: import from src/, no core logic, no copy-pasted training code. Every notebook is executed top to bottom (nbclient/nbconvert --execute) so outputs and charts are saved inside the .ipynb, and re-runs cleanly from a fresh kernel. Never commit a notebook with errors or empty outputs.
+32. Never stop, kill or force-close any process, application or service outside this project (for example Ollama, VECTOR, Docker, browsers, chat apps). If memory is short, stop only processes this session started, reduce the workload, and tell the owner what to close.
