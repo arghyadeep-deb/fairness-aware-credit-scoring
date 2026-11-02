@@ -312,3 +312,10 @@ figures script exit 0 | 6 figures, 11 tables | SUMMARY.md complete | notebook 08
 
 ## Section E diagnostics (validation only; declared after the test run; not in the test table)
 JT-W not run: sampler check (batch default rate 0.0806 vs 0.0807, gender share 0.3418 vs 0.3416) shows importance weights = 1.0. JT-A+PH (k5, la 0.25, lf 0.05, lc 0, + S1 + S2-EG, 3 seeds) vs S2-EG on validation: AUC-PR -0.0112 (sig.), worst-group ECE +0.0159 (sig.), EOD -0.0012 (not significant). Details in SUMMARY.md section 8. Run folder `artifacts/runs/20261102_diagE/`. Guard logs unchanged (28 / 8). Script `scripts/phaseE_diagnostics.py`.
+
+## Three-way lambda exploration PLAN (pre-declared; post-test; validation only; never in the test table; never served)
+Owner asked for this because the lambdas interact (earlier sweeps varied them mostly one or two at a time). Script: `scripts/phaseE_three_way.py`. Seeds 0, 1, 2; spec GRL with adv_steps 5 at every point (harmless at lambda_a = 0). Everything is scored on VALIDATION only; the test set and Taiwan test are not touched.
+- Grid W (name `grid_w`; class-weighted CE, A2 hyper-parameters, as in JT): lambda_f in {0.05, 0.1} x lambda_c in {0.5, 1, 2} x lambda_a in {0.1, 0.25} = 12 points.
+- Grid U (name `grid_u`; unweighted CE, class weights {0: 1.0, 1: 1.0}, hyper-parameters = best_params of `artifacts/runs/20261101T055729Z_phase2/a0/tuning.json`): lambda_f in {0.05, 0.1} x lambda_c in {0, 0.5} x lambda_a in {0, 0.25} = 8 points.
+- Outputs: `three_way_table.csv` (means and seed sd; pass flags EOD <= 0.04, DIR >= 0.80, AUC-ROC >= 0.7460 - 0.02, worst-group ECE <= max(1.5 x 0.0123, 0.02); Pareto frontier on AUC-PR high, EOD low, worst-group ECE low) and `three_way_diffs.csv` (paired bootstrap, N_BOOT 500, vs JT chosen and vs S2-EG, for points that pass all flags or sit on the frontier).
+- This does NOT re-apply or edit the selection rule (`configs/selection_rule.yaml` untouched). Nothing here enters the test table or the served bundle.
