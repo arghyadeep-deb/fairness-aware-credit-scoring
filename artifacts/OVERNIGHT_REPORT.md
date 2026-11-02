@@ -11,7 +11,7 @@ Sections A to E of the overnight instruction are done and committed; nothing was
 - Final test suite: 150 passed. Ruff clean on all new files.
 
 ## Headline findings (full text in SUMMARY.md)
-Gender is recoverable from features (AUC about 0.90). The class-weighted loss breaks calibration and the prior-correction formula repairs it (worst-group ECE 0.350 to 0.013). S2-EG is significantly ahead of JT chosen on AUC-ROC, AUC-PR, worst-group ECE, EOD and DIR, and tied on recall (S2-EG test EOD 0.0151 vs JT 0.0363, a barely significant gap). JT's EOD gain over A2 and S1 is not significant on test. Single-step GRL does not reduce gender leakage; multi-step GRL lowers it modestly (0.80 to about 0.76). LightGBM leads the TabTransformer by about 0.019 AUC-ROC. Taiwan shows the same direction.
+Gender is recoverable from features (AUC about 0.90). The class-weighted loss breaks calibration and the prior-correction formula repairs it (worst-group ECE 0.350 to 0.013). S2-EG is significantly ahead of JT chosen on AUC-ROC, AUC-PR, worst-group ECE, EOD and DIR, and tied on recall (S2-EG test EOD 0.0151 vs JT 0.0363, a barely significant gap). JT's EOD gain over A2 and S1 is not significant on test. Single-step GRL failed (Phase 4 single-step runs (validation numbers, control probe 0.785): probe 0.67 to 0.81, adversary loss up to 8 to 16, AUC-ROC 0.46 to 0.73); multi-step GRL lowers leakage modestly (test: 0.759 to 0.773, A2 0.791). LightGBM leads the TabTransformer by about 0.019 AUC-ROC. Taiwan shows the same direction.
 
 ## Blocked or partial
 - Nothing is blocked. `artifacts/OVERNIGHT_BLOCKED.md` (gitignored) described the earlier memory block, which was resolved after you cleared memory; it is now marked resolved.
@@ -19,7 +19,7 @@ Gender is recoverable from features (AUC about 0.90). The class-weighted loss br
 
 ## Soft flags (all)
 1. JT chosen does not beat the sequential baseline; its validation EOD was optimistic (0.0234 to 0.0363 test).
-2. Single-step GRL does not lower leakage in z (0.801 vs A2 0.791).
+2. Single-step GRL failed in the Phase 4 single-step runs (validation numbers, control probe 0.785): probe 0.67 to 0.81, adversary loss up to 8 to 16, AUC-ROC 0.46 to 0.73. JT chosen's test probe of 0.801 has the adversary off and is not a GRL result.
 3. FLAG_OWN_CAR is a possible new proxy in the JT top-15 SHAP features.
 4. Matched-pair deltas not reduced by JT (0.0336 vs A2 0.0297).
 5. JT worst-group ECE 0.0198 on test (cap 0.02); 0.0238 on 5 validation seeds.

@@ -107,8 +107,8 @@ def main() -> None:
     # ---- leakage before / after ----
     px = jload("proxy_audit")
     la = pd.read_csv(p6 / "report" / "leakage_after.csv")
-    la.to_csv(TAB / "leakage_after.csv", index=False)
-    labels = ["features (before)", "z: A2 (after)", "z: JT chosen (after)"] + [
+    la.assign(note=la.arm.map(lambda a: "adversary off, not a GRL result" if a in ("JT chosen", "JT tuned") else "")).to_csv(TAB / "leakage_after.csv", index=False)
+    labels = ["features (before)", "z: A2 (after)", "z: JT chosen (adversary off, not a GRL result)"] + [
         a.replace("JT-A ", "z: ") for a in la.arm if a.startswith("JT-A")
     ]
     vals = [px["before_auc_features"], px["after_auc_z"]["A2"], px["after_auc_z"]["JT"]] + [float(v) for a, v in zip(la.arm, la.probe_lgbm_test_auc) if a.startswith("JT-A")]  # fmt: skip

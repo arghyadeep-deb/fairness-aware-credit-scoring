@@ -2,7 +2,7 @@
 
 > **SOFT FLAGS (read first)**
 > 1. The joint model (JT chosen, 0.05/2/0) does **not** beat the sequential baseline (class weights + analytic prior correction + gender-blind fairness step, S1 / S2-EG) on fairness, calibration or AUC. Its validation EOD (0.0234) was optimistic: 0.0363 on test.
-> 2. Single-step GRL does not lower gender leakage in z (probe AUC 0.801 vs A2 0.791). Multi-step GRL lowers it by 0.03 to 0.04 (about 0.76); gender stays recoverable.
+> 2. Single-step GRL failed in the Phase 4 single-step runs (validation numbers, control probe 0.785): probe 0.67 to 0.81, adversary loss up to 8 to 16, AUC-ROC 0.46 to 0.73. Multi-step GRL test probes are 0.759 to 0.773 (A2 0.791); gender stays recoverable. JT chosen's test probe of 0.801 has the adversary off and is not a GRL result.
 > 3. FLAG_OWN_CAR enters the JT top-15 SHAP features and has single-feature gender AUC >= 0.60: possible new proxy.
 > 4. Matched-pair gaps are not reduced by JT (mean |delta| 0.0336 vs A2 0.0297).
 > 5. JT chosen worst-group ECE is 0.0198 on test (cap 0.02), 0.0238 on 5 validation seeds: at the limit.
@@ -42,7 +42,7 @@ Paired test differences, JT chosen minus S2-EG: AUC-ROC -0.0029, AUC-PR -0.0065,
 1. **Gender is recoverable from the features** (AUC about 0.90), so removing the gender column does not remove gender information.
 2. **Weighted loss breaks calibration; the prior-correction formula repairs it.** A2 worst-group ECE .3496; S1 .0131 at identical ranking (AUC-PR .2209).
 3. **The sequential pipeline matched or beat the joint model** at lower complexity (S2-EG EOD .0151 vs JT .0363, with better AUC and calibration).
-4. **Single-step GRL fails to remove gender from z; multi-step GRL lowers the fresh-probe AUC modestly** (0.80 to about 0.76). Gender is still recoverable.
+4. **Single-step GRL fails to remove gender from z** (Phase 4 single-step runs (validation numbers, control probe 0.785): probe 0.67 to 0.81, adversary loss up to 8 to 16, AUC-ROC 0.46 to 0.73); **multi-step GRL lowers the fresh-probe AUC modestly** (test: 0.759 to 0.773, A2 0.791). Gender is still recoverable. JT chosen (0.801 on test) has the adversary off, not a GRL result.
 5. **LightGBM is ahead of the TabTransformer** by about 0.019 AUC-ROC and 0.030 AUC-PR (REF vs A2), with the worst fairness gap among the deployable arms except A1/A1b.
 6. **Matched-pair check:** the nearest other-gender applicant differs by 0.030 (A2) to 0.034 (JT) on average; only H3 clearly shrinks it (0.0036), at AUC-PR .1715.
 7. **Validation-selected fairness regresses on test** (JT 0.0234 to 0.0363; H1 0.0069 to 0.0274). AUC-PR and ECE transferred well.
