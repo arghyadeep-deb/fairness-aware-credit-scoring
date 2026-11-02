@@ -60,6 +60,19 @@ nb.cells = [
         "print('Repeated guard entries:', sum(1 for _ in open(ROOT / 'artifacts' / 'guard' / 'repeated_splits.jsonl')))\n"
         "display(Image(filename=str(ROOT / 'artifacts' / 'figures' / 'repeated_splits.png'), width=900))"
     ),
+    md(
+        "## Post-hoc tuning round (added after the original test run, post-hoc)\n\n"
+        "**What this shows.** REF-T tuned on train only; ENS with validation weight 1.0, so it ranks like REF-T; EG variants built like REF-EG. "
+        "Declared after all test results were known, and not replicated on other splits."
+    ),
+    code(
+        "cols = ['arm', 'flag_rate', 'auc_roc', 'auc_pr', 'worst_group_ece', 'eod', 'dir', 'recall']\n"
+        "for n in ['validation_table', 'test_table']:\n"
+        "    print(n); display(pd.read_csv(T / f'posthoc_tuning_{n}.csv')[cols].round(4))\n"
+        "d = pd.read_csv(T / 'posthoc_tuning_test_diffs.csv')\n"
+        "display(d[d.arm.isin(['REF-T', 'REF-T-EG'])].round(4))\n"
+        "print('Guard entries:', sum(1 for _ in open(ROOT / 'artifacts' / 'guard' / 'test_access.jsonl')))"
+    ),
 ]
 nbf.write(nb, ROOT / "notebooks" / "08_figures_and_summary.ipynb")
 print("written")

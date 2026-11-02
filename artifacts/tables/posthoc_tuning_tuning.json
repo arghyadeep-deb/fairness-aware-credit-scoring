@@ -1,0 +1,17 @@
+{
+ "best_params": {
+  "num_leaves": 34,
+  "learning_rate": 0.012535038736678307,
+  "min_child_samples": 25,
+  "feature_fraction": 0.3481867760409671,
+  "bagging_fraction": 0.7942869844258006,
+  "lambda_l1": 0.005807478594550504,
+  "lambda_l2": 6.028919217534317,
+  "max_bin": 270
+ },
+ "best_cv_auc_roc": 0.761159655746495,
+ "n_completed": 40,
+ "planned": 40,
+ "seconds": 1019.9832916259766,
+ "label": "added after the original test run, post-hoc"
+}

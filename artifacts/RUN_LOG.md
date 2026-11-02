@@ -373,3 +373,6 @@ Owner request, declared after ALL test results are known (original, REF-EG, repe
 
 ## Post-hoc tuning round: note before test access
 Tuning completed all 40 trials on train (best CV AUC-ROC 0.7612, 17 minutes). Validation chose w = 1.0, so S1 adds nothing and ENS equals REF-T in ranking and flags; only its Platt-mapped probabilities differ. ENS is therefore derived from REF-T's saved test predictions with NO test access of its own. Guard log expected 29 + 3 = 32 (posthoc:REF-T, posthoc:REF-T-EG, posthoc:ENS-EG), not the declared maximum of 33. All EG gates passed (train flag rates 0.099 to 0.101). Run folder `artifacts/runs/20261102T161051Z_posthoc_tuning/`.
+
+## Post-hoc tuning round RESULTS (added after the original test run, post-hoc)
+Run folder `artifacts/runs/20261102T161051Z_posthoc_tuning/`. Guard log 29 -> 32 as noted; Taiwan and repeated-splits logs unchanged. Test: REF-T AUC-ROC 0.7672, AUC-PR 0.2541, EOD 0.0898; REF-T-EG EOD 0.0125, DIR 0.9832, recall 0.3170; ENS worst-group ECE 0.0186; ENS-EG EOD 0.0304. Details: SUMMARY.md section 12. `scripts/repeated_splits.py` asserts the 29-line guard hash in its run stage, so a re-run now needs that constant updated; its results are unaffected. Peak memory not logged; validation stage about 40 minutes, tuning 17 minutes.

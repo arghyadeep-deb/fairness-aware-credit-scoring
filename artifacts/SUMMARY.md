@@ -15,6 +15,7 @@
 > 12. POST-HOC ADDITION: REF-S1 and REF-EG were added after the original test run, knowing its results, and are labelled post-hoc everywhere. REF-EG is one extra look at the Home Credit test set (guard log 28 + 1 = 29). It uses a substitute for z (the REF TreeSHAP vector), because LightGBM has no representation. REF was never class-weighted, despite the stale `scale_pos_weight` text in `configs/arm_ref.yaml` and the `run_ref` docstring, so REF-S1 equals REF and needed no test access.
 > 13. Taiwan EG cannot reach a 10% flag rate: the class-weight search stops near its lower bound of 1 (REF-EG train rate 14 to 16%, existing S2-EG 12 to 13%), so the existing Taiwan S2-EG at 10% relies on the shared rule to trim flags. REF-EG failed its Taiwan gate and was NOT run on the Taiwan test set (guard log stays at 8).
 > 14. ROBUSTNESS REPLICATION on 5 fresh splits (section 11; declared after the test results were known; The original hyperparameters and lambdas were chosen on split 42, whose rows can fall into the new test sets (about 85% of each new test set was in split 42's train or validation), so this is a robustness check and NOT a clean out-of-sample test.) It qualifies three split-42 readings: JT's EOD gap to S2-EG and JT's validation-to-test EOD rise do not replicate, and REF-EG's EOD tie with S2-EG does not hold (REF-EG is worse). JT's worst-group ECE exceeds the 0.02 cap on all 5 splits (0.0210 to 0.0250).
+> 15. POST-HOC TUNING ROUND (section 12): REF-T, ENS, REF-T-EG and ENS-EG were added after all test results were known. REF-T got 40 Optuna trials against 10 for the other arms (departs from CRITICAL_RULES 10), three more arms looked at the Home Credit test set (guard log 29 -> 32), and they were not replicated on other splits. Validation chose ensemble weight 1.0, so ENS adds no ranking gain over REF-T.
 
 Scope. An **empirical study** of how imbalance correction, a fairness intervention and calibration interact in credit scoring, plus a joint objective `L = weighted_CE + lambda_f*fairness + lambda_c*calibration + lambda_a*adversarial` that makes the trade-off explicit. It is not a new method. Data: Home Credit Default Risk (Kaggle, **not Indian data**); secondary check: UCI Default of Credit Card Clients (Taiwan).
 
@@ -55,7 +56,7 @@ Paired test differences, JT chosen minus S2-EG: AUC-ROC -0.0029, AUC-PR -0.0065,
 
 ## 3. Configurations tried (for disclosure)
 
-Optuna trials: 10 per tuned arm (A0, A1, A1b, A2, A3, A4, A5, G1 = 80) plus 10 for tuned JT = 90; the first Phase 2 run (kept) tuned the same arms once more with different trials. JT lambda points: 20 main + 6 confusion-adversary + 8 fine = 34 compared by the rule (+2 ablation-only points). Smoke/diagnostic joint configurations: 9. Phase 4 adversary rescue: 10 variants plus a control. Multi-step GRL rescue: 32 variants (57 runs including extra seeds). H arms: 3. S2-EG: 2 implementations (v1 unmatched, kept; v2 final) plus 6 eps values. REF: 4 LightGBM settings. S2 group thresholds: 1 grid search. The selection rule was applied twice (26 and 34 points) with the same winner. After the test run, a three-way lambda exploration added 20 more lambda points (60 runs: 12 class-weighted, 8 unweighted; validation only, selection rule not re-applied; section 9), plus the validation-only JT-A+PH diagnostic (section 8). Home Credit test set: 28 guard-log entries (1 whitelisted probe + exactly 1 per arm for 27 arms); Taiwan: 8 entries. Post-hoc: Home Credit + 1 (`posthoc:REF-EG`) = 29; Taiwan + 0 = 8 (REF-S1 equals REF, and REF-EG failed its Taiwan gate). Post-hoc configurations: REF-EG, one configuration on each dataset (EG class-weight bisection on train, eps 0.01); REF-S1 adds none. Repeated splits: 5 new splits x 8 arms with frozen settings, 40 guarded test accesses in a separate log; no new hyperparameters or lambdas (EG class weights refit on each train).
+Optuna trials: 10 per tuned arm (A0, A1, A1b, A2, A3, A4, A5, G1 = 80) plus 10 for tuned JT = 90; the first Phase 2 run (kept) tuned the same arms once more with different trials. JT lambda points: 20 main + 6 confusion-adversary + 8 fine = 34 compared by the rule (+2 ablation-only points). Smoke/diagnostic joint configurations: 9. Phase 4 adversary rescue: 10 variants plus a control. Multi-step GRL rescue: 32 variants (57 runs including extra seeds). H arms: 3. S2-EG: 2 implementations (v1 unmatched, kept; v2 final) plus 6 eps values. REF: 4 LightGBM settings. S2 group thresholds: 1 grid search. The selection rule was applied twice (26 and 34 points) with the same winner. After the test run, a three-way lambda exploration added 20 more lambda points (60 runs: 12 class-weighted, 8 unweighted; validation only, selection rule not re-applied; section 9), plus the validation-only JT-A+PH diagnostic (section 8). Home Credit test set: 28 guard-log entries (1 whitelisted probe + exactly 1 per arm for 27 arms); Taiwan: 8 entries. Post-hoc: Home Credit + 1 (`posthoc:REF-EG`) = 29; Taiwan + 0 = 8 (REF-S1 equals REF, and REF-EG failed its Taiwan gate). Post-hoc configurations: REF-EG, one configuration on each dataset (EG class-weight bisection on train, eps 0.01); REF-S1 adds none. Post-hoc tuning round: REF-T 40 Optuna trials (all completed) on train only; 11 ensemble weights on validation; REF-T-EG and ENS-EG one configuration each; Home Credit guard log 29 + 3 = 32 (`posthoc:REF-T`, `posthoc:REF-T-EG`, `posthoc:ENS-EG`; ENS was derived from saved REF-T predictions, with no access). Repeated splits: 5 new splits x 8 arms with frozen settings, 40 guarded test accesses in a separate log; no new hyperparameters or lambdas (EG class weights refit on each train).
 
 ## 4. Claims checklist (docs/CRITICAL_RULES.md rules 19 to 22)
 
@@ -197,3 +198,39 @@ Do the original conclusions hold?
 4. **JT's calibration is above the cap:** worst-group ECE exceeds 0.02 on all 5 splits, so split 42's .0198 was on the favourable side. No re-selection was done.
 5. **REF-EG:** better than S2-EG on ranking on all 5 splits, but less fair (EOD worse on 4/5, DIR worse on 4/5), and the post-hoc test tie on EOD does not hold. Treat it as a trade-off, not a win.
 6. **JT-A shows no clear gain over JT chosen here** (means only; no paired test was pre-declared), unlike its significant EOD gain on split 42.
+
+## 12. Post-hoc tuning round: REF-T, ENS, REF-T-EG, ENS-EG (added after the original test run, post-hoc)
+
+Declared in commit `df96359` before running, but after all test results were known. REF-T: 40 Optuna trials, 3-fold CV on the split-42 train set only (best CV AUC-ROC 0.7612; best parameters in `artifacts/tables/posthoc_tuning_tuning.json`). 3 seeds, shared 10% rule, 1,000 paired bootstrap resamples. Validation chose **w = 1.0**: S1 adds nothing to the rank average, so ENS is REF-T with a Platt map fitted on validation, which makes its calibration worse. ENS-EG adds the A2 z to REF-T's EG input. All EG gates passed (train flag rates 0.099 to 0.101). Not replicated on Taiwan or the repeated splits, whose test rows overlap the tuning data.
+
+Validation (ENS's ECE is in-sample):
+
+| Arm | AUC-ROC | AUC-PR | Worst-group ECE | EOD | DIR | Recall |
+|---|---|---|---|---|---|---|
+| REF-T | 0.7664 | 0.2430 | 0.0081 | 0.0886 | 0.9334 | 0.3411 |
+| ENS | 0.7664 | 0.2430 | 0.0140 | 0.0886 | 0.9334 | 0.3411 |
+| REF-T-EG | 0.7664 | 0.2430 | 0.0081 | 0.0221 | 0.9749 | 0.3060 |
+| ENS-EG | 0.7664 | 0.2430 | 0.0140 | 0.0281 | 0.9714 | 0.2896 |
+| REF | 0.7646 | 0.2410 | 0.0083 | 0.0971 | 0.9345 | 0.3363 |
+| REF-EG | 0.7646 | 0.2410 | 0.0083 | 0.0297 | 0.9704 | 0.3076 |
+| S2-EG | 0.7460 | 0.2212 | 0.0123 | 0.0108 | 0.9844 | 0.3103 |
+
+Test:
+
+| Arm | AUC-ROC | AUC-PR | Worst-group ECE | EOD | DIR | Recall |
+|---|---|---|---|---|---|---|
+| REF-T | 0.7672 | 0.2541 | 0.0080 | 0.0898 | 0.9408 | 0.3503 |
+| ENS | 0.7672 | 0.2540 | 0.0186 | 0.0898 | 0.9408 | 0.3503 |
+| REF-T-EG | 0.7672 | 0.2541 | 0.0080 | 0.0125 | 0.9832 | 0.3170 |
+| ENS-EG | 0.7672 | 0.2540 | 0.0186 | 0.0304 | 0.9776 | 0.3014 |
+| REF | 0.7661 | 0.2513 | 0.0085 | 0.0849 | 0.9423 | 0.3464 |
+| REF-EG | 0.7661 | 0.2513 | 0.0085 | 0.0168 | 0.9805 | 0.3131 |
+| S2-EG | 0.7463 | 0.2209 | 0.0131 | 0.0151 | 0.9893 | 0.3077 |
+
+Differences on test (95% CI):
+- REF-T minus REF: AUC-ROC +0.0011 (0.0003 to 0.0019, sig.), AUC-PR +0.0028 (0.0014 to 0.0043, sig.), EOD +0.0050 (-0.0044 to 0.0136, not sig.).
+- REF-T-EG minus REF-EG: EOD -0.0043 (-0.0132 to 0.0065, not sig.), DIR +0.0027 (0.0002 to 0.0052, sig.), recall +0.0039 (-0.0015 to 0.0094, not sig.).
+- REF-T-EG minus S2-EG: AUC-ROC +0.0209 (0.0171 to 0.0247, sig.), AUC-PR +0.0332 (0.0263 to 0.0396, sig.), worst-group ECE -0.0051 (-0.0064 to -0.0012, sig.), EOD -0.0026 (-0.0318 to 0.0295, not sig.), DIR -0.0062 (-0.0116 to -0.0003, sig.), recall +0.0093 (-0.0031 to 0.0205, not sig.).
+- ENS-EG minus REF-T-EG is not tested directly, but its means are worse on ECE, EOD, DIR and recall.
+
+Reading: tuning gives a very small AUC gain and leaves the fairness/ranking trade-off essentially where it was. REF-T-EG's test EOD is lower than REF-EG's, but on validation (.0221 vs S2-EG .0108) it was not as close, and section 11 showed that single-split EOD ties do not always replicate: REF-EG's did not. Treat REF-T-EG as a hypothesis. The served model is unchanged.

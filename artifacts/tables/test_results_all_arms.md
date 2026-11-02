@@ -29,3 +29,7 @@
 | ThresholdOptimizer | analysis only | 0.7463 | 0.2209 | 0.0131 | 0.0294 | 0.9938 | 0.6711 |
 | REF-S1 (post-hoc) | deployable, added after the original test run, post-hoc | 0.7661 | 0.2513 | 0.0085 | 0.0849 | 0.9423 | 0.3464 |
 | REF-EG (post-hoc) | deployable, added after the original test run, post-hoc | 0.7661 | 0.2513 | 0.0085 | 0.0168 | 0.9805 | 0.3131 |
+| REF-T (post-hoc) | deployable, added after the original test run, post-hoc | 0.7672 | 0.2541 | 0.0080 | 0.0898 | 0.9408 | 0.3503 |
+| ENS (post-hoc) | deployable, added after the original test run, post-hoc | 0.7672 | 0.2540 | 0.0186 | 0.0898 | 0.9408 | 0.3503 |
+| REF-T-EG (post-hoc) | deployable, added after the original test run, post-hoc | 0.7672 | 0.2541 | 0.0080 | 0.0125 | 0.9832 | 0.3170 |
+| ENS-EG (post-hoc) | deployable, added after the original test run, post-hoc | 0.7672 | 0.2540 | 0.0186 | 0.0304 | 0.9776 | 0.3014 |

@@ -60,6 +60,9 @@ def test_real_before_json_contract():
     assert (path.parent / "top15_proxy_features_before.png").stat().st_size > 1000
 
 
+POSTHOC = {"posthoc:REF-EG", "posthoc:REF-T", "posthoc:REF-T-EG", "posthoc:ENS-EG"}
+
+
 def test_guard_log_entries_are_whitelisted_probe_or_declared_phase6_arms():
     """Phase 1 entry: gender-only, no target. Phase 6: one entry per arm."""
     log = resolve(CFG["paths"]["guard_log"])
@@ -71,8 +74,8 @@ def test_guard_log_entries_are_whitelisted_probe_or_declared_phase6_arms():
         if e["purpose"] == "leakage_probe_gender_only":
             assert e["with_target"] is False
         else:
-            assert e["purpose"].startswith("phase6:") or e["purpose"] == "posthoc:REF-EG"
+            assert e["purpose"].startswith("phase6:") or e["purpose"] in POSTHOC
     p6 = [p for p in purposes if p.startswith("phase6:")]
     assert len(p6) == len(set(p6))  # never two accesses for the same arm
     assert purposes.count("leakage_probe_gender_only") == 1
-    assert purposes.count("posthoc:REF-EG") <= 1  # declared in RUN_LOG, commit 6e3fdfc
+    assert all(purposes.count(p) <= 1 for p in POSTHOC)  # declared in RUN_LOG: 6e3fdfc, df96359

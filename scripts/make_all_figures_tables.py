@@ -68,6 +68,10 @@ def main() -> None:
     if ph_file.exists():
         ph = pd.read_csv(ph_file)
         ph = ph[ph.arm.isin(["REF-S1", "REF-EG"])]
+        tun_file = ROOT / "artifacts" / "tables" / "posthoc_tuning_test_table.csv"
+        if tun_file.exists():
+            tun = pd.read_csv(tun_file)
+            ph = pd.concat([ph, tun[tun.arm.isin(["REF-T", "ENS", "REF-T-EG", "ENS-EG"])]], ignore_index=True)
         ph = ph.assign(arm=ph.arm + " (post-hoc)", deployable=True, posthoc=True)
         cmp_ = pd.concat([cmp_, ph], ignore_index=True)
         cmp_["deployable"] = cmp_["deployable"].astype(bool)
