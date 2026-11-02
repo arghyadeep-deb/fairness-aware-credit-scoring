@@ -43,6 +43,12 @@ th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line
 th { background: #eef1f6; position: sticky; top: 0; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .tablewrap { overflow-x: auto; max-height: 520px; }
+.tablewrap.full { max-height: none; }
+tr.served td { background: #e8f0fe; font-weight: 600; }
+tr.served td:first-child { box-shadow: inset 3px 0 0 #1f5fbf; }
+td[title] { cursor: help; }
+details#cmp_all { margin-top: 12px; }
+details#cmp_all summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
 .muted { color: var(--muted); } .small { font-size: .85rem; }
 .chart-box { position: relative; height: 300px; }
 .slider-row { display: grid; grid-template-columns: 90px 1fr 60px; gap: 8px; align-items: center; margin: 6px 0; }

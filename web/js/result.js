@@ -14,7 +14,7 @@
     "Risk band: Low means below the average default rate in the training data, High means the score is in the top 10% flagged by the model, Medium is in between. Model " + p.model_version + ".";
   const ul = document.getElementById("warnings");
   (p.warnings || []).forEach((w) => { const li = document.createElement("li"); li.textContent = w; ul.appendChild(li); });
-  Charts.shapBars(document.getElementById("shap"), saved.explain.contributions);
+  Charts.shapBars(document.getElementById("shap"), saved.explain.display || saved.explain.contributions);
 
   const out = document.getElementById("matched");
   function row(label, value) {

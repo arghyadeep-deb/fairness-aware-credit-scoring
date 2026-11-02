@@ -9,11 +9,11 @@ const Charts = (() => {
     canvas.replaceWith(p);
   }
   function shapBars(canvas, items) {
-    if (!ready()) return placeholder(canvas, "Chart library unavailable (offline): " + items.map((i) => i.feature + " " + i.shap.toFixed(3)).join("; "));
+    if (!ready()) return placeholder(canvas, "Chart library unavailable (offline): " + items.map((i) => FieldLabels.shapLabel(i) + " " + i.shap.toFixed(3)).join("; "));
     const top = items.slice(0, 10);
     return new Chart(canvas, {
       type: "bar",
-      data: { labels: top.map((i) => i.feature + (i.value === null ? "" : " = " + i.value)),
+      data: { labels: top.map((i) => FieldLabels.shapLabel(i)),
               datasets: [{ data: top.map((i) => i.shap), backgroundColor: top.map((i) => (i.shap >= 0 ? colors.pos : colors.neg)) }] },
       options: { indexAxis: "y", maintainAspectRatio: false, plugins: { legend: { display: false } },
                  scales: { x: { title: { display: true, text: "SHAP contribution to default logit" } }, y: { ticks: { font: { size: 11 } } } } },

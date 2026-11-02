@@ -32,20 +32,56 @@
     line(t, p.note);
   }
 
-  function comparison(c) {
-    const tb = document.getElementById("cmp"); tb.replaceChildren();
-    const head = ["Method", "Use", "AUC-ROC", "AUC-PR", "Worst-group ECE", "EOD", "DIR", "Recall"];
+  const CI_KEYS = ["auc_roc", "auc_pr", "worst_group_ece", "eod"];
+  const MAIN_ORDER = ["S2-EG", "REF-EG", "A2"];
+
+  function metricCell(r, k) {
+    const td = document.createElement("td");
+    td.className = "num";
+    const lo = r[k + "_lo"], hi = r[k + "_hi"];
+    if (typeof lo === "number" && typeof hi === "number") {
+      td.textContent = f4(r[k]) + " \u00b1 " + f4((hi - lo) / 2);
+      td.title = "95% interval " + f4(lo) + " to " + f4(hi);
+    } else td.textContent = f4(r[k]);
+    return td;
+  }
+
+  function fillTable(tb, rows, served) {
+    tb.replaceChildren();
     const tr0 = document.createElement("tr");
-    head.forEach((h, i) => { const th = document.createElement("th"); th.textContent = h; if (i > 1) th.className = "num"; tr0.appendChild(th); });
+    ["Method", "Use", "AUC-ROC", "AUC-PR", "Worst-group ECE", "EOD", "DIR", "Recall"].forEach((h, i) => {
+      const th = document.createElement("th"); th.textContent = h; if (i > 1) th.className = "num"; tr0.appendChild(th);
+    });
     tb.appendChild(tr0);
-    const ci = (r, k, d) => f4(r[k]) + (r[k + "_lo"] !== undefined && r[k + "_lo"] !== null ? " [" + f4(r[k + "_lo"]) + ", " + f4(r[k + "_hi"]) + "]" : "");
-    c.rows.forEach((r) => {
+    rows.forEach((r) => {
       const tr = document.createElement("tr");
-      const cells = [r.arm, r.deployable ? "deployable" : "analysis only", ci(r, "auc_roc"), ci(r, "auc_pr"), ci(r, "worst_group_ece"), ci(r, "eod"), f4(r.dir), f4(r.recall)];
-      cells.forEach((v, i) => { const td = document.createElement("td"); td.textContent = v; if (i > 1) td.className = "num"; if (i === 1) td.className = r.deployable ? "dep-yes" : "dep-no"; tr.appendChild(td); });
+      if (r.arm === served) tr.className = "served";
+      const name = document.createElement("td");
+      name.textContent = r.arm + (r.arm === served ? " (served)" : "");
+      const use = document.createElement("td");
+      use.textContent = (r.deployable ? "deployable" : "analysis only") + (r.posthoc ? ", post-hoc" : "");
+      use.className = r.deployable ? "dep-yes" : "dep-no";
+      tr.append(name, use);
+      CI_KEYS.forEach((k) => tr.appendChild(metricCell(r, k)));
+      ["dir", "recall"].forEach((k) => tr.appendChild(metricCell(r, k)));
       tb.appendChild(tr);
     });
+  }
+
+  function comparison(c, extra) {
+    const all = c.rows.concat(extra);
+    const main = [c.served_arm, ...MAIN_ORDER].map((a) => all.find((r) => r.arm === a)).filter(Boolean);
+    fillTable(document.getElementById("cmp_main"), main, c.served_arm);
+    fillTable(document.getElementById("cmp"), all, c.served_arm);
     document.getElementById("honest").textContent = c.headline;
+  }
+
+  async function posthocRows() {
+    // Separate labelled file: the frozen bundle's comparison stays unchanged. The page still works without it.
+    try {
+      const res = await fetch("data/posthoc_arms.json");
+      return res.ok ? (await res.json()).rows : [];
+    } catch (e) { return []; }
   }
 
   let trade = null, chart = null;
@@ -69,9 +105,9 @@
   async function init() {
     showStatus(statusEl, "info", "Loading dashboard data...");
     try {
-      const [f, c, p, cmp, tr] = await Promise.all([API.get("/fairness"), API.get("/calibration"), API.get("/proxy-audit"), API.get("/comparison"), API.get("/tradeoff")]);
+      const [f, c, p, cmp, tr, extra] = await Promise.all([API.get("/fairness"), API.get("/calibration"), API.get("/proxy-audit"), API.get("/comparison"), API.get("/tradeoff"), posthocRows()]);
       showStatus(statusEl, "", "");
-      trade = tr; fairness(f); calibration(c); proxy(p); comparison(cmp);
+      trade = tr; fairness(f); calibration(c); proxy(p); comparison(cmp, extra);
       ["lf", "lc", "la"].forEach((id) => document.getElementById(id).addEventListener("input", slide));
       slide();
     } catch (e) {

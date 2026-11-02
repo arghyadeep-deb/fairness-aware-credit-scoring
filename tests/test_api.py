@@ -401,3 +401,39 @@ def test_no_database_dependency_in_api():
     src = "\n".join(p.read_text(encoding="utf-8") for p in (ROOT / "api").glob("*.py"))
     for banned in ("sqlalchemy", "sqlite3", "pymysql", "psycopg", "mysql", "pymongo", "peewee"):
         assert banned not in src.lower()
+
+
+def test_explain_display_merges_missing_flags_and_keeps_contributions(client, example):
+    rec = dict(example, ext_source_3=None)
+    j = client.post("/explain", json=rec).json()
+    assert len(j["display"]) == j["top_k"] and all(not c["feature"].endswith("_MISSING") for c in j["display"])
+    assert all(set(c) == {"feature", "value", "shap"} for c in j["contributions"])  # contract unchanged
+    mags = [abs(c["shap"]) for c in j["display"]]
+    assert mags == sorted(mags, reverse=True)
+
+
+def test_merge_missing_is_additive_and_marks_missing():
+    from api.explain import merge_missing
+
+    items = [
+        {"feature": "EXT_SOURCE_3", "value": 0.5, "shap": 0.2},
+        {"feature": "EXT_SOURCE_3_MISSING", "value": 1, "shap": -0.5},
+        {"feature": "EXT_SOURCE_1", "value": 0.4, "shap": 0.1},
+        {"feature": "EXT_SOURCE_1_MISSING", "value": 0, "shap": 0.05},
+        {"feature": "AMT_CREDIT", "value": 9, "shap": 0.01},
+    ]
+    out = {t["feature"]: t for t in merge_missing(items)}
+    assert set(out) == {"EXT_SOURCE_3", "EXT_SOURCE_1", "AMT_CREDIT"}
+    assert out["EXT_SOURCE_3"]["missing"] and out["EXT_SOURCE_3"]["value"] is None
+    assert abs(out["EXT_SOURCE_3"]["shap"] + 0.3) < 1e-9
+    assert not out["EXT_SOURCE_1"]["missing"] and out["EXT_SOURCE_1"]["value"] == 0.4
+    assert abs(sum(t["shap"] for t in out.values()) - sum(t["shap"] for t in items)) < 1e-9
+
+
+def test_posthoc_rows_stay_outside_the_frozen_comparison(client):
+    assert "REF-EG" not in [r["arm"] for r in client.get("/comparison").json()["rows"]]
+    import json as _json
+    from pathlib import Path as _P
+
+    data = _json.loads((_P(__file__).resolve().parents[1] / "web/data/posthoc_arms.json").read_text(encoding="utf-8"))
+    assert data["rows"][0]["arm"] == "REF-EG" and data["rows"][0]["posthoc"] is True

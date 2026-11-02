@@ -1,0 +1,26 @@
+{
+ "label": "added after the original test run, post-hoc",
+ "source": "artifacts/tables/posthoc_ref_test_table.csv",
+ "rows": [
+  {
+   "arm": "REF-EG",
+   "deployable": true,
+   "posthoc": true,
+   "n_seeds": 3,
+   "dir": 0.9805014484328308,
+   "recall": 0.31310418904403864,
+   "auc_roc": 0.7660635091253828,
+   "auc_roc_lo": 0.7585080551024317,
+   "auc_roc_hi": 0.7734817179229705,
+   "auc_pr": 0.25127620382163746,
+   "auc_pr_lo": 0.24043187306219324,
+   "auc_pr_hi": 0.264205878271406,
+   "worst_group_ece": 0.008462241355106948,
+   "worst_group_ece_lo": 0.0085438872382978,
+   "worst_group_ece_hi": 0.012919341378262365,
+   "eod": 0.016799770487647026,
+   "eod_lo": 0.008655113649606047,
+   "eod_hi": 0.04395852784779974
+  }
+ ]
+}

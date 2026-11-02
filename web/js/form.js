@@ -6,15 +6,7 @@
   const form = document.getElementById("applicant");
   let meta = null;
 
-  const LABELS = {
-    age_years: "Age (years)", cnt_children: "Number of children", cnt_fam_members: "Family members",
-    amt_income_total: "Total income", amt_credit: "Credit amount", amt_annuity: "Loan annuity",
-    amt_goods_price: "Goods price", region_population_relative: "Region population (relative)",
-    years_employed: "Years employed", name_family_status: "Family status", name_education_type: "Education",
-    name_income_type: "Income type", name_housing_type: "Housing type", occupation_type: "Occupation",
-    organization_type: "Organization type", flag_own_car: "Owns a car", flag_own_realty: "Owns real estate",
-    ext_source_1: "External score 1", ext_source_2: "External score 2", ext_source_3: "External score 3",
-  };
+  const LABELS = FieldLabels.form;
 
   function el(tag, attrs, children) {
     const e = document.createElement(tag);
@@ -33,7 +25,7 @@
   function build() {
     fieldsEl.replaceChildren();
     Object.entries(meta.numeric).forEach(([name, r]) => {
-      const rng = (r.min !== null ? r.min : "") + " to " + (r.max !== null ? r.max : "");
+      const rng = r.max !== null ? (r.min !== null ? r.min : "") + " to " + r.max : "min " + r.min;
       const inp = el("input", { id: name, name, type: "number", inputmode: "decimal", step: r.integer ? "1" : "any", autocomplete: "off" });
       if (r.min !== null) inp.min = r.min;
       if (r.max !== null) inp.max = r.max;

@@ -46,9 +46,14 @@ class Contribution(BaseModel):
     shap: float
 
 
+class DisplayContribution(Contribution):
+    missing: bool = False
+
+
 class ExplainResponse(BaseModel):
     base_value: float
     contributions: list[Contribution]
+    display: list[DisplayContribution] = []
     top_k: int
     model_version: str
     warnings: list[str] = []

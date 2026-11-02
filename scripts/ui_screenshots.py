@@ -55,7 +55,7 @@ class CDP:
 
     def shot(self, name: str, full: bool = True) -> str:
         h = self.js("Math.max(document.body.scrollHeight, 900)") if full else 900
-        self.call("Emulation.setDeviceMetricsOverride", width=1280, height=int(min(h, 3200)), deviceScaleFactor=1, mobile=False)
+        self.call("Emulation.setDeviceMetricsOverride", width=1280, height=int(min(h, 6000)), deviceScaleFactor=1, mobile=False)
         time.sleep(0.8)
         data = self.call("Page.captureScreenshot", format="png")["data"]
         p = OUT / name
@@ -98,6 +98,8 @@ def main() -> int:
         c.js("document.getElementById('example').click()")
         time.sleep(1.5)
         report["steps"]["example_loaded"] = bool(c.js("document.getElementById('age_years').value !== ''"))
+        report["steps"]["open_range_labels_ok"] = bool(c.js("!document.getElementById('fields').textContent.includes(' to )') && document.getElementById('fields').textContent.includes('min 0')"))
+        c.js("document.getElementById('ext_source_3').value = ''")  # exercise the merged "not provided" SHAP label
         report["steps"]["screenshot_form"] = c.shot("01_form.png")
         # ---- submit -> result page ----
         c.js("document.getElementById('submit').click()")
@@ -106,6 +108,11 @@ def main() -> int:
         report["steps"]["probability_text"] = c.js("document.getElementById('prob').textContent")
         report["steps"]["band_text"] = c.js("document.getElementById('band').textContent")
         report["steps"]["shap_chart_drawn"] = bool(c.js("typeof Chart !== 'undefined' && !!Chart.getChart('shap')"))
+        labels = c.js("Chart.getChart('shap').data.labels") or []
+        report["steps"]["shap_labels"] = labels
+        report["steps"]["shap_labels_friendly"] = bool(labels) and not any("_" in str(x).split(" = ")[0] for x in labels)
+        full = c.js("JSON.parse(sessionStorage.getItem('lastResult')).explain.display.filter(x => x.feature === 'EXT_SOURCE_3').map(x => FieldLabels.shapLabel(x))[0]")
+        report["steps"]["missing_score_label"] = full
         c.js("document.getElementById('gender').value = 'F'; document.getElementById('match').click()")
         report["steps"]["matched_panel"] = c.wait("document.getElementById('matched').textContent.includes('Difference')", 40)
         report["steps"]["screenshot_result"] = c.shot("02_result.png")
@@ -118,6 +125,13 @@ def main() -> int:
         time.sleep(1.5)
         report["steps"]["slider_nearest"] = c.js("document.getElementById('near').textContent.slice(0,120)")
         report["steps"]["honest_banner"] = c.js("document.getElementById('honest').textContent")
+        report["steps"]["main_table_rows"] = c.js("[...document.querySelectorAll('#cmp_main tr')].slice(1).map(r => r.cells[0].textContent)")
+        report["steps"]["served_highlighted"] = c.js("document.querySelector('#cmp_main tr.served').cells[0].textContent")
+        report["steps"]["ci_hover_sample"] = c.js("document.querySelector('#cmp_main tr.served td[title]').title")
+        report["steps"]["cell_sample"] = c.js("document.querySelector('#cmp_main tr.served td[title]').textContent")
+        c.js("document.getElementById('cmp_all').open = true")
+        report["steps"]["full_table_rows"] = c.js("document.querySelectorAll('#cmp tr').length - 1")
+        report["steps"]["no_row_cut_off"] = bool(c.js("[...document.querySelectorAll('.tablewrap.full')].every(w => w.scrollHeight <= w.clientHeight + 1)"))
         report["steps"]["disclaimer_on_all_pages"] = True
         report["steps"]["screenshot_dashboard"] = c.shot("03_dashboard.png")
         for page in ("index.html", "result.html", "dashboard.html"):

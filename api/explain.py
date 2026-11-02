@@ -38,6 +38,27 @@ def _display(v):
     return str(v)
 
 
+MISSING_FLAGS = {
+    "EMPLOYED_MISSING": "YEARS_EMPLOYED",
+    "EXT_SOURCE_1_MISSING": "EXT_SOURCE_1",
+    "EXT_SOURCE_2_MISSING": "EXT_SOURCE_2",
+    "EXT_SOURCE_3_MISSING": "EXT_SOURCE_3",
+}
+
+
+def merge_missing(items: list[dict]) -> list[dict]:
+    """One entry per input: a missing-flag's SHAP is added to its feature (SHAP is additive), sorted."""
+    by = {t["feature"]: dict(t, missing=False) for t in items if t["feature"] not in MISSING_FLAGS}
+    for t in items:
+        base = MISSING_FLAGS.get(t["feature"])
+        if base in by:
+            by[base]["shap"] += t["shap"]
+            by[base]["missing"] = t["value"] == 1
+            if by[base]["missing"]:
+                by[base]["value"] = None
+    return sorted(by.values(), key=lambda t: -abs(t["shap"]))
+
+
 def explain(b: Bundle, rec: ApplicantRecord, top_k: int = 10, nsamples: int = 100) -> dict:
     import shap
 
@@ -66,12 +87,14 @@ def explain(b: Bundle, rec: ApplicantRecord, top_k: int = 10, nsamples: int = 10
         {"feature": n, "value": _display(derived[n]), "shap": float(vec[i])}
         for i, n in enumerate(names)
     ]
+    display = merge_missing(items)[:top_k]
     items.sort(key=lambda t: -abs(t["shap"]))
     with torch.no_grad():
         base = float(f(bc, be).mean())
     return {
         "base_value": base,
         "contributions": items[:top_k],
+        "display": display,
         "top_k": top_k,
         "model_version": b.version,
     }
