@@ -131,6 +131,6 @@ web/
   score, delta, population mean |delta|), a short note on what the numbers mean.
 - Page 3: fairness bars (DPD, EOD, DIR, per-group TPR/FPR with CI), reliability diagrams per gender group with ECE, proxy-audit table (leakage AUC before/after,
   top proxy features), lambda sliders that call /tradeoff and redraw the Pareto/trade-off chart, with the nearest sweep point labelled.
-- Every page carries a visible disclaimer: "Research prototype. Trained on Home Credit (not Indian data). Not for real credit decisions."
+- The top disclaimer banner was removed at the owner's request (2026-11-03). The result page's "What the numbers mean" note still says the score is a research output, not an approval decision.
 - States: loading spinner, API-down message with retry, 422 field errors shown next to the field, empty/NO_MATCH message for matched-pair.
 - Works offline except Chart.js CDN (pin the version; optionally vendor a local copy in web/js/vendor/ so the demo works without internet).

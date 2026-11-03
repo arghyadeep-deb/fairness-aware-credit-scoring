@@ -133,13 +133,14 @@ def main() -> int:
         c.js("document.getElementById('cmp_all').open = true")
         report["steps"]["full_table_rows"] = c.js("document.querySelectorAll('#cmp tr').length - 1")
         report["steps"]["no_row_cut_off"] = bool(c.js("[...document.querySelectorAll('.tablewrap.full')].every(w => w.scrollHeight <= w.clientHeight + 1)"))
-        report["steps"]["disclaimer_on_all_pages"] = True
         report["steps"]["screenshot_dashboard"] = c.shot("03_dashboard.png")
+        # The top disclaimer banner was removed at the owner's request; check that every page still loads.
+        report["steps"]["all_pages_load"] = True
         for page in ("index.html", "result.html", "dashboard.html"):
             c.call("Page.navigate", url=f"{BASE}/{page}")
             time.sleep(1.2)
-            if not c.js("document.querySelector('.disclaimer') && document.querySelector('.disclaimer').textContent.includes('Not for real credit decisions')"):
-                report["steps"]["disclaimer_on_all_pages"] = False
+            if not c.js("!!document.querySelector('header') && !document.querySelector('.disclaimer')"):
+                report["steps"]["all_pages_load"] = False
         c.ws.close()
     finally:
         if br:
