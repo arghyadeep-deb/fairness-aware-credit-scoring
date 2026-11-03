@@ -30,3 +30,6 @@ specs/
 !artifacts/bundle/
 !artifacts/bundle/v1/
 !artifacts/bundle/v1/**
+
+# PDFs (kept on this computer, not published)
+*.pdf
