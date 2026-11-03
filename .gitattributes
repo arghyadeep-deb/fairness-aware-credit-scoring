@@ -1,0 +1,5 @@
+*.pt binary
+*.joblib binary
+*.npz binary
+*.npy binary
+artifacts/bundle/** -text

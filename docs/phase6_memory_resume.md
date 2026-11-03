@@ -1,7 +1,0 @@
-# Phase 6 memory-safe resume
-
-1. Preserve all completed `done.json` arms; use only cached Home Credit test inputs under `artifacts/test_preds/`. Train/validation data and frozen models remain available for fitting the predeclared probes; never invoke Home Credit test access again.
-2. Cap CPU/LightGBM/joblib at four, use float32 probe/SHAP arrays, process SHAP in batches of 500 with the original 100-row background, 4,000 train rows and 5,000 cached test rows. Release model/tensor/probe buffers explicitly after each step and seed. Retain original completed arms' 4,000-row SHAP results and disclose the mixed sample counts rather than overwrite them.
-3. Run bootstrap in blocks of 100, preserving replicate seeds/paired indices and retaining only metric vectors. Run synthetic smoke/regression tests before long analysis.
-4. Start exactly one unfinished arm process at a time and wait for its native exit; monitor psutil RSS and log each arm/attempt in RUN_LOG. Preserve incomplete old attempt outputs. Retry a memory-killed arm once with 2,000 SHAP test rows, with a logged deviation; never hide failures or skip an unfinished arm.
-5. Sequentially generate report, retrain Taiwan with identical hyperparameters/lambdas, make Pareto figures, execute notebook06, record all soft flags, print the phase gate, commit without pushing, and stop for “next phase.” JT-W/JT-A+PH are not declared and will not be invented.

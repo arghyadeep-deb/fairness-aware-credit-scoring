@@ -1,0 +1,44 @@
+{
+ "model_version": "jt-chosen-0.05-2-0-seed0-v1",
+ "git_commit": "2976f80fdcda43a1248c87bcbbc262b0fa92f8dc",
+ "config_hash": "55e1f9c07c81e9cdf5af03705a199629befea0f2b48e49728177c98e9ce4b701",
+ "seeds": [
+  0,
+  1,
+  2
+ ],
+ "served_seed": 0,
+ "lambdas": [
+  0.05,
+  2.0,
+  0.0
+ ],
+ "risk_bands": {
+  "low_max": 0.08072788426695904,
+  "medium_max": 0.19436781101874467
+ },
+ "risk_band_rule": "Low: below the training default rate; Medium: above it but below the flag threshold (validation 90th percentile); High: at or above the flag threshold",
+ "parity_bf16_vs_fp32_max_abs_diff_on_test_pool": 0.0018425724290673795,
+ "files": {
+  "examples.json": "da813f6ea5633a0a40d4ab462c1bfbaf277e3bd8a171ec23e693d21e43c42985",
+  "json/calibration.json": "2dcb4152283356349e29bedcc3e4934a2b887a96982fa7186bfbdefd8d60fd67",
+  "json/comparison.json": "d7641c07a01c878f094411d0cfe135db43be9d962e5ff5aaba72eaabb06429ea",
+  "json/fairness.json": "0cefe45826a47aa8eb883509f79fd80cdd8b436249533545d8cd9595dfb9a61d",
+  "json/matched_stats.json": "e7b4ff43d65ab7e580def4db6dc19bbe4b325f4fab1116a9563703947d41601a",
+  "json/proxy_audit.json": "8d4847c9a6b816c3438ef98b25878cf01479db713cbe354d11ab171b6531430f",
+  "json/tradeoff.json": "d0075a5fc649837b80af8c9995a29021b5b60b72f7bcda372fe6d9d3cea9c1e5",
+  "matched_pool.npz": "83f19f43de9656b7286e14609aaab8540f639a72c831488a752f6669d59f5b11",
+  "model/backbone.pt": "9c9a5548e6d4d743e93cc3fd843e5e6f8483ce52e6fa4a065a66ed55d89b2828",
+  "model/model_spec.json": "8617bc4c10cbf9b6ce27885209cd046d79d447b75360176b73d5b3fcd1d4f87b",
+  "prep/cardinalities.json": "2f1ae406c82b47696b935b649195f75fe88e5a350b9da4755d08570adca2dfa0",
+  "prep/class_weights.json": "1cf49260be94538d40a89824b694d15a7b75ded4ede8e3c778b5d1f795fcff76",
+  "prep/data_cfg.yaml": "3472acae06a2914141ca7fc7b52addea140de2fa90124c66902229629bf72595",
+  "prep/encoders.json": "249b2625f7f1d71e7d5b4b59ca32b111d46ba62e8bd54eb55f13fa463a5927db",
+  "prep/feature_order.json": "adb62dbcfe789e550a57d0b0526c6a76ef5aaed151526c13b301254e2b0fe59e",
+  "prep/medians.json": "df73bdaee4903a4169c48624d758b2c50f049f20c2ab317f24ba7dfc17507eb0",
+  "prep/scaler.joblib": "67ed1030fd5d9bc4dfe532ecef327037052ec137c04826395c9db4c09d60fb4c",
+  "requirements_freeze.txt": "9b39c31e59b27ac5a169a5cf79a63b6f57c3e754d440a8331f9c8d4cc7af9a8d",
+  "shap_background.npz": "b9e487f6771cf39405da6bf7ff62a0b8daf5487e0b881a25b16cf4c391c5b5ce"
+ },
+ "bundle_sha": "c3bb9c7254d5a973c46edab138c28e508e2eed7f5a76d502d0bebcdd6265ee56"
+}

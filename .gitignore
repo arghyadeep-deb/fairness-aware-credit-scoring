@@ -14,4 +14,19 @@ artifacts/*
 kaggle.json
 *.pt
 *.joblib
-!artifacts/RUN_LOG.md
+
+# Local tool configuration (kept on this computer, not published)
+.claude/
+
+# Project notes and agent instructions (kept on this computer, not published)
+CLAUDE.md
+specs/
+*.md
+# ...except the public README and the text files the notebook build scripts read
+!README.md
+!scripts/*.md
+
+# served model bundle (needed by the deployed API)
+!artifacts/bundle/
+!artifacts/bundle/v1/
+!artifacts/bundle/v1/**

@@ -1,0 +1,74 @@
+{
+ "before_auc_features": 0.90030389997092,
+ "after_auc_z": {
+  "A2": 0.7911276813475802,
+  "JT": 0.8005538857730462
+ },
+ "shap_probe_auc": {
+  "A2": 0.8009981477810963,
+  "JT": 0.81093725010423
+ },
+ "top_proxy_features": [
+  {
+   "feature": "OCCUPATION_TYPE",
+   "gain": 0.3932177983693903
+  },
+  {
+   "feature": "ORGANIZATION_TYPE",
+   "gain": 0.12499234591087607
+  },
+  {
+   "feature": "FLAG_OWN_CAR",
+   "gain": 0.10900332990784788
+  },
+  {
+   "feature": "EXT_SOURCE_1",
+   "gain": 0.06337202829032837
+  },
+  {
+   "feature": "AGE_YEARS",
+   "gain": 0.0537218926507045
+  },
+  {
+   "feature": "AMT_INCOME_TOTAL",
+   "gain": 0.04423100250537894
+  },
+  {
+   "feature": "NAME_FAMILY_STATUS",
+   "gain": 0.027409095908914514
+  },
+  {
+   "feature": "CREDIT_TERM",
+   "gain": 0.02059359807465414
+  },
+  {
+   "feature": "YEARS_EMPLOYED",
+   "gain": 0.0205761804947187
+  },
+  {
+   "feature": "CREDIT_INCOME_RATIO",
+   "gain": 0.015679939013083736
+  },
+  {
+   "feature": "EXT_SOURCE_2",
+   "gain": 0.01526014253748789
+  },
+  {
+   "feature": "EXT_SOURCE_3",
+   "gain": 0.015218836913947388
+  },
+  {
+   "feature": "CNT_FAM_MEMBERS",
+   "gain": 0.014409851107080058
+  },
+  {
+   "feature": "ANNUITY_INCOME_RATIO",
+   "gain": 0.01373792333144097
+  },
+  {
+   "feature": "AMT_ANNUITY",
+   "gain": 0.012947329044474362
+  }
+ ],
+ "note": "Gender stays recoverable from the learned representation z for both models (AUC well above 0.5)."
+}

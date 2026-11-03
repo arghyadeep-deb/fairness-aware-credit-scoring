@@ -1,0 +1,96 @@
+{
+ "n_cont": 21,
+ "cards": [
+  7,
+  6,
+  9,
+  7,
+  19,
+  59
+ ],
+ "model_defaults": {
+  "tabtransformer": {
+   "emb_dim": 32,
+   "heads": 4,
+   "layers": 3,
+   "attn_dropout": 0.1,
+   "ffn_mult": 2,
+   "mlp": [
+    128,
+    64
+   ],
+   "dropout": 0.1
+  },
+  "cnn1d": {
+   "emb_dim": 8,
+   "channels": [
+    32,
+    64
+   ],
+   "kernel": 3,
+   "mlp": [
+    64
+   ],
+   "dropout": 0.1
+  },
+  "mlp": {
+   "emb_dim": 8,
+   "hidden": [
+    256,
+    128,
+    64
+   ],
+   "dropout": 0.1
+  }
+ },
+ "hp": {
+  "lr": 0.0026480792283380566,
+  "weight_decay": 1.3549853367563292e-06,
+  "dropout": 0.2534251886332105,
+  "emb_dim": 16
+ },
+ "cont_names": [
+  "CNT_CHILDREN",
+  "CNT_FAM_MEMBERS",
+  "AMT_INCOME_TOTAL",
+  "AMT_CREDIT",
+  "AMT_ANNUITY",
+  "AMT_GOODS_PRICE",
+  "REGION_POPULATION_RELATIVE",
+  "AGE_YEARS",
+  "YEARS_EMPLOYED",
+  "EXT_SOURCE_1",
+  "EXT_SOURCE_2",
+  "EXT_SOURCE_3",
+  "CREDIT_INCOME_RATIO",
+  "ANNUITY_INCOME_RATIO",
+  "CREDIT_TERM",
+  "FLAG_OWN_CAR",
+  "FLAG_OWN_REALTY",
+  "EMPLOYED_MISSING",
+  "EXT_SOURCE_1_MISSING",
+  "EXT_SOURCE_2_MISSING",
+  "EXT_SOURCE_3_MISSING"
+ ],
+ "cat_names": [
+  "NAME_FAMILY_STATUS",
+  "NAME_EDUCATION_TYPE",
+  "NAME_INCOME_TYPE",
+  "NAME_HOUSING_TYPE",
+  "OCCUPATION_TYPE",
+  "ORGANIZATION_TYPE"
+ ],
+ "lambdas": [
+  0.05,
+  2.0,
+  0.0
+ ],
+ "seed": 0,
+ "val_auc_pr_by_seed": {
+  "0": 0.21742469141115392,
+  "1": 0.21433534929246506,
+  "2": 0.2119012114734194
+ },
+ "head": "A (default probability); Head B never served",
+ "probability": "sigmoid(logit), no post-hoc correction (learned calibration term lambda_c=2)"
+}

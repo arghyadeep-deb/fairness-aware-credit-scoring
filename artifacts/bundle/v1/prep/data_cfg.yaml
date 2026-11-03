@@ -1,0 +1,85 @@
+add_ratios: true
+binary_yn:
+- FLAG_OWN_CAR
+- FLAG_OWN_REALTY
+categorical:
+- NAME_FAMILY_STATUS
+- NAME_EDUCATION_TYPE
+- NAME_INCOME_TYPE
+- NAME_HOUSING_TYPE
+- OCCUPATION_TYPE
+- ORGANIZATION_TYPE
+checks:
+  max_split_gap_pp: 0.5
+  mean_abs_tol: 0.05
+  min_cell_rows: 50
+  std_tol: 0.05
+clip_quantiles:
+- 0.001
+- 0.999
+days_birth: DAYS_BIRTH
+days_employed: DAYS_EMPLOYED
+days_employed_placeholder: 365243
+days_per_year: 365.25
+env:
+  min_torch: '2.7'
+evaluation:
+  flag_rate: 0.1
+ext_source_columns:
+- EXT_SOURCE_1
+- EXT_SOURCE_2
+- EXT_SOURCE_3
+gender_column: CODE_GENDER
+gender_drop_values:
+- XNA
+gender_encoding:
+  F: 0
+  M: 1
+id_column: SK_ID_CURR
+include_ext_source: true
+leakage:
+  lightgbm:
+    colsample_bytree: 0.8
+    early_stopping_rounds: 50
+    learning_rate: 0.05
+    min_child_samples: 50
+    n_estimators: 2000
+    num_leaves: 63
+    subsample: 0.8
+    subsample_freq: 1
+  logistic:
+    C: 1.0
+    max_iter: 300
+  premise_auc_floor: 0.6
+  seed: 42
+  shuffle_tolerance: 0.02
+  top_k: 15
+mlflow:
+  artifact_root: artifacts/mlflow_artifacts
+  tracking_uri: sqlite:///artifacts/mlflow.db
+numeric_raw:
+- CNT_CHILDREN
+- CNT_FAM_MEMBERS
+- AMT_INCOME_TOTAL
+- AMT_CREDIT
+- AMT_ANNUITY
+- AMT_GOODS_PRICE
+- REGION_POPULATION_RELATIVE
+paths:
+  guard_log: artifacts/guard/test_access.jsonl
+  leakage_artifacts: artifacts/leakage
+  prep_artifacts: artifacts/prep
+  processed: data/processed
+  raw_csv: data/raw/application_train.csv
+  smoke_root: artifacts/smoke
+  uci_xls: data/raw/uci_taiwan/default of credit card clients.xls
+seed: 42
+smoke:
+  fraction: 0.05
+split:
+  fractions:
+    test: 0.15
+    train: 0.7
+    val: 0.15
+  seed: 42
+target_column: TARGET

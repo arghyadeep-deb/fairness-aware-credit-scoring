@@ -1,0 +1,9 @@
+{
+ "mean_abs_delta": 0.03359600056925556,
+ "mean": 0.03359600056925556,
+ "median": 0.019959924276918173,
+ "p95": 0.11352103315293789,
+ "max": 0.2609536722302437,
+ "n_pairs": 5000,
+ "note": "nearest applicant of the other gender in the test pool; model never sees gender"
+}
