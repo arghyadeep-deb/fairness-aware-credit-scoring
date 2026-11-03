@@ -39,3 +39,8 @@ mlflow ui --backend-store-uri sqlite:///artifacts/mlflow.db
 ```
 git add -A && git commit -m "stage1: data prep + checks"
 ```
+
+## Hosting on Render (keep-alive)
+- Start command: `uvicorn api.main:app --host 0.0.0.0 --port $PORT`
+- Render's free tier sleeps a web service after 15 minutes without traffic. `api/keepalive.py` pings `<public url>/health` every 10 minutes so it stays awake.
+- On Render it turns on by itself (Render sets `RENDER_EXTERNAL_URL`). Elsewhere set `KEEPALIVE_URL=https://your-host`. Change the interval with `KEEPALIVE_SECONDS` (minimum 60). Turn it off with `KEEPALIVE_DISABLED=1`. Locally it stays off.

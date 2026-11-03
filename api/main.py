@@ -21,6 +21,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from api import keepalive
 from api.bundle import Bundle, load_bundle
 from api.explain import explain
 from api.matched import matched_pair
@@ -54,7 +55,10 @@ def create_app(bundle_dir: str | Path | None = None) -> FastAPI:
         except Exception as exc:  # fail closed: every data endpoint answers 503
             app.state.error = f"{type(exc).__name__}: {exc}"
             log.error("bundle NOT loaded: %s", app.state.error)
+        ka = keepalive.start()  # off unless KEEPALIVE_URL or RENDER_EXTERNAL_URL is set
         yield
+        if ka is not None:
+            ka.cancel()
 
     app = FastAPI(title="Fairness-aware credit scoring (research prototype)", lifespan=lifespan)
     app.add_middleware(
