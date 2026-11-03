@@ -2,6 +2,8 @@
 
 An **empirical study** of how imbalance correction, a fairness intervention and calibration interact in credit-default prediction, with a joint training objective that makes the trade-off explicit, and a small web demo of the served model. B.Tech major project, KIIT.
 
+**Live demo:** https://fairness-aware-credit-scoring.onrender.com/ (hosted on Render's free plan; if it has been idle, the first load can take up to a minute while it wakes up).
+
 > Research prototype. The models are trained on Home Credit Default Risk (Kaggle), which is **not Indian data**, and must not be used for real credit decisions. This is not a new method; it compares known techniques under one protocol.
 
 ## What it does
@@ -48,10 +50,21 @@ A secondary check retrains on the UCI Taiwan credit-card dataset with the same s
 
 ## Demo
 
-A FastAPI backend serves the frozen model and a three-page frontend.
+A FastAPI backend serves the frozen model and a three-page frontend from one service.
+
+**Live on Render:**
+
+| Page | Link |
+|---|---|
+| Applicant form | https://fairness-aware-credit-scoring.onrender.com/ |
+| Result | https://fairness-aware-credit-scoring.onrender.com/result.html (opens after scoring an applicant) |
+| Dashboard | https://fairness-aware-credit-scoring.onrender.com/dashboard.html |
+| API health check | https://fairness-aware-credit-scoring.onrender.com/health |
+
+**Run locally:**
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-serve.txt
 uvicorn api.main:app --port 8000
 # open http://127.0.0.1:8000/
 ```
@@ -60,7 +73,7 @@ uvicorn api.main:app --port 8000
 - **Result:** the features that pushed the score up or down (SHAP), and a comparison with the most similar applicant of the other gender.
 - **Dashboard:** test-set fairness, calibration by gender, the proxy audit, a lambda trade-off explorer, and the method comparison.
 
-The model bundle in `artifacts/bundle/v1/` is checked against a sha256 manifest at start-up; the API refuses to serve if any file has changed. For hosting on Render, the start command is `uvicorn api.main:app --host 0.0.0.0 --port $PORT`; a keep-alive ping (`api/keepalive.py`) stops the free tier from sleeping.
+The model bundle in `artifacts/bundle/v1/` is checked against a sha256 manifest at start-up; the API refuses to serve if any file has changed. Render settings: build `pip install -r requirements-serve.txt` (CPU-only PyTorch), start `uvicorn api.main:app --host 0.0.0.0 --port $PORT`, health check `/health` (also in `render.yaml`). A keep-alive ping (`api/keepalive.py`) calls `/health` every 10 minutes so the free instance stays awake.
 
 ## Repository layout
 
