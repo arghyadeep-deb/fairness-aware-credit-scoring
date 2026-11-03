@@ -1,0 +1,14 @@
+# Serving only (Render / any host): the API and the static frontend. Training needs requirements.txt.
+# CPU-only PyTorch keeps the install and memory small. Versions match artifacts/bundle/v1/requirements_freeze.txt.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.11.0+cpu
+numpy==2.5.4
+pandas==3.1.0
+scikit-learn==1.9.1
+scipy==1.18.1
+joblib==1.6.0
+PyYAML==6.0.3
+pydantic==2.14.2
+fastapi==0.162.0
+starlette==1.10.0
+uvicorn==0.54.0
