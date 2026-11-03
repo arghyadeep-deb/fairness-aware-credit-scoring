@@ -139,6 +139,14 @@ def test_meta_options_built_from_bundle(client):
     assert set(m["risk_bands"]) == {"low_max", "medium_max"} and m["include_ext_source"] is True
 
 
+def test_examples_are_synthetic_and_not_real_rows(client):
+    j = client.get("/examples").json()
+    assert j["source"] == "synthetic"
+    for rec in j["examples"]:
+        m = client.post("/matched-pair", json={"record": rec, "gender": "M"}).json()
+        assert m["self_excluded"] is False  # no reference-pool row is (nearly) identical
+
+
 def test_examples_have_no_gender_and_count(client):
     ex = client.get("/examples").json()["examples"]
     assert 5 <= len(ex) <= 10

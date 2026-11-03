@@ -7,6 +7,7 @@ No database, no file writes, no applicant data in logs (request id, endpoint, st
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 import uuid
@@ -36,6 +37,7 @@ from api.service import predict
 
 log = logging.getLogger("api")
 WEB = Path(__file__).resolve().parents[1] / "web"
+SYNTHETIC = Path(__file__).resolve().parent / "data" / "synthetic_examples.json"
 NUMERIC_FIELDS = [n for n in ApplicantRecord.model_fields if not n.startswith("name_") and n not in
                   ("occupation_type", "organization_type", "flag_own_car", "flag_own_realty")]  # fmt: skip
 
@@ -192,11 +194,14 @@ def create_app(bundle_dir: str | Path | None = None) -> FastAPI:
     @app.get("/examples")
     def examples(request: Request):
         b = need(request)
-        return (
-            b
-            if isinstance(b, JSONResponse)
-            else {"examples": b.examples, "model_version": b.version}
-        )
+        if isinstance(b, JSONResponse):
+            return b
+        # Synthetic demo applicants (scripts/make_synthetic_examples.py) replace the real held-out rows
+        # stored in the frozen bundle; fall back to the bundle only if the synthetic file is missing.
+        if SYNTHETIC.is_file():
+            syn = json.loads(SYNTHETIC.read_text(encoding="utf-8"))
+            return {"examples": syn["examples"], "source": "synthetic", "model_version": b.version}
+        return {"examples": b.examples, "source": "held-out rows", "model_version": b.version}
 
     if WEB.is_dir():
         app.mount("/", StaticFiles(directory=WEB, html=True), name="web")

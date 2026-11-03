@@ -1,0 +1,182 @@
+{
+ "note": "Copied from saved run files (paths given). Phase 2 run used: the second run (20261101T055729Z); the first run 20261101T052529Z is kept but not used.",
+ "split": "stratified 70/15/15 on TARGET, seed 42 (configs/data.yaml)",
+ "seeds": {
+  "model": [
+   0,
+   1,
+   2
+  ],
+  "jt_a_extra": [
+   3,
+   4
+  ],
+  "served": 0
+ },
+ "tuned_arms_phase2": {
+  "a0": {
+   "best_params": {
+    "lr": 0.0021528749054645644,
+    "weight_decay": 0.0005072957033687832,
+    "dropout": 0.028242643640234863,
+    "emb_dim": 16
+   },
+   "best_val_auc_pr": 0.2121437136478953,
+   "n_trials": 10,
+   "source": "artifacts/runs/20261101T055729Z_phase2/a0/tuning.json"
+  },
+  "a1": {
+   "best_params": {
+    "lr": 0.0016752921820651215,
+    "weight_decay": 0.00011713432990910408,
+    "dropout": 0.02432382669510965,
+    "emb_dim": 16
+   },
+   "best_val_auc_pr": 0.16273793168191278,
+   "n_trials": 10,
+   "source": "artifacts/runs/20261101T055729Z_phase2/a1/tuning.json"
+  },
+  "a1b": {
+   "best_params": {
+    "lr": 0.0007212209371216929,
+    "weight_decay": 1.3780069485983648e-06,
+    "dropout": 0.018504875454083636,
+    "emb_dim": 16
+   },
+   "best_val_auc_pr": 0.15517486236076386,
+   "n_trials": 10,
+   "source": "artifacts/runs/20261101T055729Z_phase2/a1b/tuning.json"
+  },
+  "a2": {
+   "best_params": {
+    "lr": 0.0026480792283380566,
+    "weight_decay": 1.3549853367563292e-06,
+    "dropout": 0.2534251886332105,
+    "emb_dim": 16
+   },
+   "best_val_auc_pr": 0.2128068764139619,
+   "n_trials": 10,
+   "source": "artifacts/runs/20261101T055729Z_phase2/a2/tuning.json"
+  },
+  "a3": {
+   "best_params": {
+    "lr": 0.002502730848623479,
+    "weight_decay": 7.53594649507617e-05,
+    "dropout": 0.2491463314135072
+   },
+   "best_val_auc_pr": 0.18116836981057716,
+   "n_trials": 10,
+   "source": "artifacts/runs/20261101T055729Z_phase2/a3/tuning.json"
+  },
+  "a4": {
+   "best_params": {
+    "lr": 0.00274112452868459,
+    "weight_decay": 0.0003800819906301147,
+    "dropout": 0.08180606316032536
+   },
+   "best_val_auc_pr": 0.2160377254301854,
+   "n_trials": 10,
+   "source": "artifacts/runs/20261101T055729Z_phase2/a4/tuning.json"
+  },
+  "a5": {
+   "best_params": {
+    "lr": 0.0009105670092604885,
+    "weight_decay": 1.916562608362051e-05,
+    "dropout": 0.22095910457439077,
+    "emb_dim": 16,
+    "focal_gamma": 2.5887887957726607
+   },
+   "best_val_auc_pr": 0.2127827196912524,
+   "n_trials": 10,
+   "source": "artifacts/runs/20261101T055729Z_phase2/a5/tuning.json"
+  },
+  "g1": {
+   "best_params": {
+    "lr": 0.0026480792283380566,
+    "weight_decay": 1.3549853367563292e-06,
+    "dropout": 0.2534251886332105,
+    "emb_dim": 16
+   },
+   "best_val_auc_pr": 0.21149692001895354,
+   "n_trials": 10,
+   "source": "artifacts/runs/20261101T055729Z_phase2/g1/tuning.json"
+  }
+ },
+ "served_model": {
+  "arm": "JT chosen (rule-selected, untuned)",
+  "lambdas_f_c_a": [
+   0.05,
+   2.0,
+   0.0
+  ],
+  "hyperparameters": {
+   "lr": 0.0026480792283380566,
+   "weight_decay": 1.3549853367563292e-06,
+   "dropout": 0.2534251886332105,
+   "emb_dim": 16
+  },
+  "model_defaults": {
+   "tabtransformer": {
+    "emb_dim": 32,
+    "heads": 4,
+    "layers": 3,
+    "attn_dropout": 0.1,
+    "ffn_mult": 2,
+    "mlp": [
+     128,
+     64
+    ],
+    "dropout": 0.1
+   },
+   "cnn1d": {
+    "emb_dim": 8,
+    "channels": [
+     32,
+     64
+    ],
+    "kernel": 3,
+    "mlp": [
+     64
+    ],
+    "dropout": 0.1
+   },
+   "mlp": {
+    "emb_dim": 8,
+    "hidden": [
+     256,
+     128,
+     64
+    ],
+    "dropout": 0.1
+   }
+  },
+  "risk_bands": {
+   "low_max": 0.08072788426695904,
+   "medium_max": 0.19436781101874467
+  },
+  "selection_rule": "configs/selection_rule.yaml (committed before the sweep)"
+ },
+ "jt_tuned": {
+  "source": "artifacts/runs/20261101T092911Z_phase4b/jt_tuning.json",
+  "best_params": {
+   "lr": 0.0007106591851092234,
+   "weight_decay": 0.0007114476009343421,
+   "dropout": 0.21959818254342153,
+   "emb_dim": 16
+  }
+ },
+ "ref_t_posthoc": {
+  "source": "artifacts/runs/20261102T161051Z_posthoc_tuning/tuning.json",
+  "best_params": {
+   "num_leaves": 34,
+   "learning_rate": 0.012535038736678307,
+   "min_child_samples": 25,
+   "feature_fraction": 0.3481867760409671,
+   "bagging_fraction": 0.7942869844258006,
+   "lambda_l1": 0.005807478594550504,
+   "lambda_l2": 6.028919217534317,
+   "max_bin": 270
+  }
+ },
+ "decision_rule": "flag top 10% (validation 90th-percentile threshold), same for all arms"
+}

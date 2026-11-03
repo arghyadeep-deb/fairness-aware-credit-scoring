@@ -33,3 +33,4 @@ specs/
 
 # PDFs (kept on this computer, not published)
 *.pdf
+!REPRODUCE.md
