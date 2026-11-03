@@ -22,12 +22,15 @@ SELF_TOL = 0.05
 def nearest_other_gender(
     cont_pool, cat_pool, a_pool, cont, cat, own_gender_code: int
 ) -> tuple[int, bool]:
-    """(pool index of the match, whether the applicant's own row was left out of the search)."""
-    cand = np.flatnonzero(a_pool != own_gender_code)
-    d = np.sqrt(((cont_pool[cand] - cont[None, :]) ** 2).sum(1))
-    is_self = (d < SELF_TOL) & (cat_pool[cand] == cat[None, :]).all(1)
-    if is_self.any():
-        cand, d = cand[~is_self], d[~is_self]
+    """(pool index of the match, whether the applicant's own row was left out of the search).
+
+    The own-row check runs over the WHOLE pool before the gender filter, so the returned flag is the same
+    whichever gender is submitted and cannot reveal a pool row's recorded gender.
+    """
+    d_all = np.sqrt(((cont_pool - cont[None, :]) ** 2).sum(1))
+    is_self = (d_all < SELF_TOL) & (cat_pool == cat[None, :]).all(1)
+    cand = np.flatnonzero((a_pool != own_gender_code) & ~is_self)
+    d = d_all[cand]
     top = np.argpartition(d, K_CAND)[:K_CAND]
     mism = (cat_pool[cand[top]] != cat[None, :]).sum(1)
     return int(cand[top[np.argmin(d[top] + 0.5 * mism)]]), bool(is_self.any())

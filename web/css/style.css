@@ -55,3 +55,4 @@ details#cmp_all summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
 .slider-row input[type=range] { padding: 0; }
 .dep-yes { color: var(--low); font-weight: 600; } .dep-no { color: var(--med); font-weight: 600; }
 @media (max-width: 560px) { .score { font-size: 2.1rem; } .slider-row { grid-template-columns: 70px 1fr 50px; } }
+.num .ci { display: block; font-size: 0.78em; color: var(--muted, #6b7280); white-space: nowrap; }

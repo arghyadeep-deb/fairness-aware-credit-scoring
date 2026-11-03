@@ -454,7 +454,10 @@ def test_nearest_other_gender_leaves_out_the_applicants_own_row():
 
 def test_sample_applicants_never_match_themselves(client):
     for rec in client.get("/examples").json()["examples"]:
+        flags = []
         for g in ("M", "F"):
             j = client.post("/matched-pair", json={"record": rec, "gender": g}).json()
-            assert abs(j["delta"]) > 1e-3 or not j["self_excluded"]
+            assert abs(j["delta"]) > 1e-3
             assert isinstance(j["self_excluded"], bool)
+            flags.append(j["self_excluded"])
+        assert flags[0] == flags[1], "flag must not depend on the submitted gender"

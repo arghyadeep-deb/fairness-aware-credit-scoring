@@ -61,6 +61,10 @@ def test_real_before_json_contract():
 
 
 POSTHOC = {"posthoc:REF-EG", "posthoc:REF-T", "posthoc:REF-T-EG", "posthoc:ENS-EG"}
+# Exact Phase 6 arms declared before the test run (any other "phase6:" suffix is an unexplained access).
+PHASE6_ARMS = {"A0", "A1", "A1b", "A2", "A3", "A4", "A5", "G1", "GI", "REF", "S1", "S2-EG", "S2-GT",
+               "per-group Platt", "per-group isotonic", "ThresholdOptimizer", "JT chosen", "JT tuned",
+               "H1", "H2", "H3"} | {f"JT-A k{k} la{la}" for k in (3, 5) for la in (0.1, 0.25, 0.5)}  # fmt: skip
 
 
 def test_guard_log_entries_are_whitelisted_probe_or_declared_phase6_arms():
@@ -74,7 +78,8 @@ def test_guard_log_entries_are_whitelisted_probe_or_declared_phase6_arms():
         if e["purpose"] == "leakage_probe_gender_only":
             assert e["with_target"] is False
         else:
-            assert e["purpose"].startswith("phase6:") or e["purpose"] in POSTHOC
+            arm = e["purpose"][len("phase6:"):] if e["purpose"].startswith("phase6:") else None
+            assert arm in PHASE6_ARMS or e["purpose"] in POSTHOC, e["purpose"]
     p6 = [p for p in purposes if p.startswith("phase6:")]
     assert len(p6) == len(set(p6))  # never two accesses for the same arm
     assert purposes.count("leakage_probe_gender_only") == 1

@@ -40,7 +40,12 @@
     td.className = "num";
     const lo = r[k + "_lo"], hi = r[k + "_hi"];
     if (typeof lo === "number" && typeof hi === "number") {
-      td.textContent = f4(r[k]) + " \u00b1 " + f4((hi - lo) / 2);
+      // Percentile intervals need not be centred on the estimate, so show both ends, not a half-width.
+      td.textContent = f4(r[k]);
+      const ci = document.createElement("span");
+      ci.className = "ci";
+      ci.textContent = "[" + f4(lo) + ", " + f4(hi) + "]";
+      td.appendChild(ci);
       td.title = "95% interval " + f4(lo) + " to " + f4(hi);
     } else td.textContent = f4(r[k]);
     return td;

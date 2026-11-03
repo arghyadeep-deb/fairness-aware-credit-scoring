@@ -42,6 +42,16 @@ def test_ece_zero_for_perfectly_calibrated_and_large_for_overconfident():
     assert ece_equal_freq(y, np.clip(p * 0.2, 1e-6, 1)) > 0.2
 
 
+def test_ks_ignores_order_inside_tied_scores():
+    y = np.array([0, 0, 1, 1])
+    assert ks_statistic(y, np.full(4, 0.3)) == 0.0  # identical score distributions
+    rng = np.random.default_rng(0)
+    p = rng.integers(0, 5, 400) / 4.0  # heavy ties
+    yy = (rng.random(400) < p * 0.5).astype(int)
+    vals = {ks_statistic(yy[o], p[o]) for o in (rng.permutation(400) for _ in range(20))}
+    assert len(vals) == 1
+
+
 def test_ks_and_auc_known_values():
     y = np.array([0, 0, 1, 1])
     assert ks_statistic(y, np.array([0.1, 0.2, 0.8, 0.9])) == 1.0

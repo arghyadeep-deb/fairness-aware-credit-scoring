@@ -35,13 +35,19 @@ METRIC_NAMES = [
 
 
 def ks_statistic(y: np.ndarray, p: np.ndarray) -> float:
-    """Max gap between the score CDFs of defaulters and non-defaulters."""
+    """Max gap between the score CDFs of defaulters and non-defaulters.
+
+    The gap is read only at the end of each block of equal scores, so tied scores (bf16, isotonic)
+    neither inflate KS nor make it depend on row order (before 2026-11-03: read after every row).
+    """
     order = np.argsort(p, kind="mergesort")
-    ys = y[order]
+    ys, ps = y[order], p[order]
     n1, n0 = ys.sum(), len(ys) - ys.sum()
     if n1 == 0 or n0 == 0:
         return float("nan")
-    return float(np.max(np.abs(np.cumsum(ys) / n1 - np.cumsum(1 - ys) / n0)))
+    gap = np.abs(np.cumsum(ys) / n1 - np.cumsum(1 - ys) / n0)
+    block_end = np.r_[ps[1:] != ps[:-1], True]
+    return float(np.max(gap[block_end]))
 
 
 def ece_equal_freq(y: np.ndarray, p: np.ndarray, bins: int = 15) -> float:

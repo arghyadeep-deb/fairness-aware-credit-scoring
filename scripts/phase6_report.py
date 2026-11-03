@@ -72,6 +72,8 @@ def main() -> None:
     def pooled(a, n):
         return np.nanmean(np.stack(B[a][:n]), axis=0)
 
+    # NOTE (2026-11-03): diff_A_minus_B below is the mean of the bootstrap differences, not the observed
+    # difference of seed means; scripts/observed_diffs.py writes the observed values beside this table.
     def diff(a, b):
         n = min(len(B[a]), len(B[b]))
         pa, pb = pooled(a, n), pooled(b, n)
